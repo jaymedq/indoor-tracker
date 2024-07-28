@@ -54,11 +54,11 @@ from parser_mmw_demo import parser_one_mmw_demo_output_packet
 
 
 # Change the configuration file name
-configFileName = 'xwr68xxconfig.cfg'
+configFileName = '3d_xwr68xxconfig.cfg'
 
 # Change to output to csv
 OUTPUT_TO_CSV = True
-outpout_file_path = 'output_mmw_lab.csv'
+outpout_file_path = configFileName[:-4]+'_output.csv'
 # Change the debug variable to use print()
 DEBUG = False
 
@@ -85,8 +85,8 @@ def serialConfig(configFileName):
     # Open the serial ports for the configuration and the data ports
     
     # Raspberry pi
-    CLIport = serial.Serial('/dev/ttyUSB1', 115200)
-    Dataport = serial.Serial('/dev/ttyUSB2', 921600)
+    CLIport = serial.Serial('/dev/ttyUSB0', 115200)
+    Dataport = serial.Serial('/dev/ttyUSB1', 921600)
     
     # # Windows
     # CLIport = serial.Serial('COM8', 115200)
