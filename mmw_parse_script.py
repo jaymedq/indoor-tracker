@@ -312,6 +312,7 @@ class IWRAPP:
         global detObj
         x = []
         y = []
+        z = []
         
         # Read and parse the received data
         dataOk, frameNumber, detObj = readAndParseData14xx(Dataport, configParameters)
@@ -320,6 +321,7 @@ class IWRAPP:
             pprint.pp(detObj)
             x = detObj["x"]
             y = detObj["y"]
+            z = detObj['z']
             
             if OUTPUT_TO_CSV:
                 # Check if the file exists, and create it with headers if it doesn't
@@ -327,13 +329,13 @@ class IWRAPP:
                     create_csv_with_headers(outpout_file_path, list(detObj.keys()) + ['Timestamp'])
                 append_dict_to_csv(outpout_file_path, detObj)
 
-        return dataOk, x, y
+        return dataOk, x, y, z
 
 
     def onNewData(self):
         
         # Update the data and check if the data is okay        
-        dataOk,newx,newy = self.update()
+        dataOk,newx,newy, newz = self.update()
 
         if dataOk:
             # Store the current frame into frameData
@@ -341,13 +343,18 @@ class IWRAPP:
             #currentIndex += 1
             x = newx
             y = newy
-            print(f"{x=},{y=}")
+            z = newz
+            print(f"{x=},{y=},{z=}")
+        return dataOk
             
     
     def run(self):
         while(1):
-            self.onNewData()
-            time.sleep(0.1)
+            dataOk = self.onNewData()
+            if(dataOk):
+                time.sleep(1)
+            else:
+                time.sleep(0.1)
 
 
 
