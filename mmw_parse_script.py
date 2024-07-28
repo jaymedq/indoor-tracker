@@ -86,8 +86,8 @@ def serialConfig(configFileName):
     #Dataport = serial.Serial('/dev/ttyACM1', 921600)
     
     # Windows
-    CLIport = serial.Serial('COM8', 115200)
-    Dataport = serial.Serial('COM7', 921600)
+    CLIport = serial.Serial('COM4', 115200)
+    Dataport = serial.Serial('COM5', 921600)
 
     # Read the configuration file and send it to the board
     config = [line.rstrip('\r\n') for line in open(configFileName)]
@@ -305,7 +305,7 @@ class MyWidget(pg.GraphicsLayoutWidget):
         self.setLayout(self.mainLayout)
 
         self.timer = QtCore.QTimer(self)
-        self.timer.setInterval(100) # in milliseconds
+        self.timer.setInterval(1000) # in milliseconds
         self.timer.start()
         self.timer.timeout.connect(self.onNewData)
 
