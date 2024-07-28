@@ -42,30 +42,33 @@
 #   2. This example script also outputs the detected point cloud data in mmw_demo_output.csv 
 #      to showcase how to use the output of parser_one_mmw_demo_output_packet
 # ****************************************************************************
+import csv
+from datetime import datetime
 import serial
 import time
 import numpy as np
 import os
 import sys
-from PyQt5 import QtWidgets, QtCore
-import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui
 # import the parser function 
 from parser_mmw_demo import parser_one_mmw_demo_output_packet
+
 
 # Change the configuration file name
 configFileName = 'xwr68xxconfig.cfg'
 
+# Change to output to csv
+OUTPUT_TO_CSV = True
+outpout_file_path = 'output_mmw_lab.csv'
 # Change the debug variable to use print()
-DEBUG = True
+DEBUG = False
 
 # Constants
-maxBufferSize = 2**15;
+maxBufferSize = 2**15
 CLIport = {}
 Dataport = {}
 byteBuffer = np.zeros(2**15,dtype = 'uint8')
-byteBufferLength = 0;
-maxBufferSize = 2**15;
+byteBufferLength = 0
+maxBufferSize = 2**15
 magicWord = [2, 1, 4, 3, 6, 5, 8, 7]
 detObj = {}  
 frameData = {}    
@@ -82,12 +85,12 @@ def serialConfig(configFileName):
     # Open the serial ports for the configuration and the data ports
     
     # Raspberry pi
-    #CLIport = serial.Serial('/dev/ttyACM0', 115200)
-    #Dataport = serial.Serial('/dev/ttyACM1', 921600)
+    CLIport = serial.Serial('/dev/ttyUSB1', 115200)
+    Dataport = serial.Serial('/dev/ttyUSB2', 921600)
     
-    # Windows
-    CLIport = serial.Serial('COM4', 115200)
-    Dataport = serial.Serial('COM5', 921600)
+    # # Windows
+    # CLIport = serial.Serial('COM8', 115200)
+    # Dataport = serial.Serial('COM7', 921600)
 
     # Read the configuration file and send it to the board
     config = [line.rstrip('\r\n') for line in open(configFileName)]
@@ -120,21 +123,21 @@ def parseConfigFile(configFileName):
             rampEndTime = float(splitWords[5])
             freqSlopeConst = float(splitWords[8])
             numAdcSamples = int(splitWords[10])
-            numAdcSamplesRoundTo2 = 1;
+            numAdcSamplesRoundTo2 = 1
             
             while numAdcSamples > numAdcSamplesRoundTo2:
-                numAdcSamplesRoundTo2 = numAdcSamplesRoundTo2 * 2;
+                numAdcSamplesRoundTo2 = numAdcSamplesRoundTo2 * 2
                 
-            digOutSampleRate = int(splitWords[11]);
+            digOutSampleRate = int(splitWords[11])
             
         # Get the information about the frame configuration    
         elif "frameCfg" in splitWords[0]:
             
-            chirpStartIdx = int(splitWords[1]);
-            chirpEndIdx = int(splitWords[2]);
-            numLoops = int(splitWords[3]);
-            numFrames = int(splitWords[4]);
-            framePeriodicity = int(splitWords[5]);
+            chirpStartIdx = int(splitWords[1])
+            chirpEndIdx = int(splitWords[2])
+            numLoops = int(splitWords[3])
+            numFrames = int(splitWords[4])
+            framePeriodicity = int(splitWords[5])
 
             
     # Combine the read data to obtain the configuration parameters           
@@ -214,8 +217,8 @@ def readAndParseData14xx(Dataport, configParameters):
             print("allBinData: ", allBinData[0], allBinData[1], allBinData[2], allBinData[3])
 
         # init local variables
-        totalBytesParsed = 0;
-        numFramesParsed = 0;
+        totalBytesParsed = 0
+        numFramesParsed = 0
 
         # parser_one_mmw_demo_output_packet extracts only one complete frame at a time
         # so call this in a loop till end of file
@@ -256,13 +259,13 @@ def readAndParseData14xx(Dataport, configParameters):
 
             
             # For example, dump all S/W objects to a csv file
-            """
+            """"""
             import csv
             if (numFramesParsed == 1):
                 democsvfile = open('mmw_demo_output.csv', 'w', newline='')                
                 demoOutputWriter = csv.writer(democsvfile, delimiter=',',
                                         quotechar='', quoting=csv.QUOTE_NONE)                                    
-                demoOutputWriter.writerow(["frame","DetObj#","x","y","z","v","snr","noise"])            
+                demoOutputWriter.writerow(["frame","DetObj#","x","y","z","v","snr","noise","raw"])            
             
             for obj in range(numDetObj):
                 demoOutputWriter.writerow([numFramesParsed-1, obj, detectedX_array[obj],\
@@ -270,10 +273,11 @@ def readAndParseData14xx(Dataport, configParameters):
                                             detectedZ_array[obj],\
                                             detectedV_array[obj],\
                                             detectedSNR_array[obj],\
-                                            detectedNoise_array[obj]])
-            """
+                                            detectedNoise_array[obj],\
+                                            bytes(allBinData[:totalBytesParsed]).hex()])
+            """"""
             detObj = {"numObj": numDetObj, "range": detectedRange_array, \
-                        "x": detectedX_array, "y": detectedY_array, "z": detectedZ_array}
+                        "x": detectedX_array, "y": detectedY_array, "z": detectedZ_array, "raw": bytes(allBinData[:totalBytesParsed]).hex()}
             dataOK = 1 
         else: 
             # error in parsing; exit the loop
@@ -296,27 +300,10 @@ def readAndParseData14xx(Dataport, configParameters):
     return dataOK, frameNumber, detObj
 
 
-class MyWidget(pg.GraphicsLayoutWidget):
+class IWRAPP:
 
     def __init__(self, parent=None):
-        super().__init__(parent=parent)
-
-        self.mainLayout = QtWidgets.QVBoxLayout()
-        self.setLayout(self.mainLayout)
-
-        self.timer = QtCore.QTimer(self)
-        self.timer.setInterval(1000) # in milliseconds
-        self.timer.start()
-        self.timer.timeout.connect(self.onNewData)
-
-        self.plotItem = self.addPlot(title="Lidar points")
-
-        self.plotDataItem = self.plotItem.plot([], pen=None, 
-            symbolBrush=(255,0,0), symbolSize=5, symbolPen=None)
-
-
-    def setData(self, x, y):
-        self.plotDataItem.setData(x, y)
+        pass
 
     # Funtion to update the data and display in the plot
     def update(self):
@@ -328,10 +315,17 @@ class MyWidget(pg.GraphicsLayoutWidget):
         
         # Read and parse the received data
         dataOk, frameNumber, detObj = readAndParseData14xx(Dataport, configParameters)
+        import pprint
         if dataOk and len(detObj["x"]) > 0:
-            #print(detObj)
+            pprint.pp(detObj)
             x = detObj["x"]
             y = detObj["y"]
+            
+            if OUTPUT_TO_CSV:
+                # Check if the file exists, and create it with headers if it doesn't
+                if not os.path.isfile(outpout_file_path):
+                    create_csv_with_headers(outpout_file_path, list(detObj.keys()) + ['Timestamp'])
+                append_dict_to_csv(outpout_file_path, detObj)
 
         return dataOk, x, y
 
@@ -347,8 +341,34 @@ class MyWidget(pg.GraphicsLayoutWidget):
             #currentIndex += 1
             x = newx
             y = newy
-            self.setData(x, y)
+            print(f"{x=},{y=}")
+            
+    
+    def run(self):
+        while(1):
+            self.onNewData()
+            time.sleep(0.1)
 
+
+
+def create_csv_with_headers(file_path, headers):
+    # Create the CSV file with headers if it doesn't exist
+    with open(file_path, mode='w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=headers)
+        writer.writeheader()
+
+def append_dict_to_csv(file_path, data_dict):
+    # Add a timestamp entry to the dictionary
+    data_dict['Timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Check if the file exists
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=data_dict.keys())
+        
+        # Write the data
+        writer.writerow(data_dict)
 
 def main():        
     # Configurate the serial port
@@ -358,20 +378,14 @@ def main():
     global configParameters 
     configParameters = parseConfigFile(configFileName)
 
-    app = QtWidgets.QApplication([])
-
-    pg.setConfigOptions(antialias=False) # True seems to work as well
-
-    win = MyWidget()
-    win.show()
-    win.resize(800,600) 
-    win.raise_()
-    app.exec_()
-    CLIport.write(('sensorStop\n').encode())
-    CLIport.close()
-    Dataport.close()
-
-
+    app = IWRAPP()
+    try:
+        app.run()
+    except Exception as e:
+        CLIport.write(('sensorStop\n').encode())
+        CLIport.close()
+        Dataport.close()
+        raise e
 
 if __name__ == "__main__":
     main()
