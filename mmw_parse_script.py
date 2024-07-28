@@ -1,47 +1,3 @@
-# ****************************************************************************
-# * (C) Copyright 2020, Texas Instruments Incorporated. - www.ti.com
-# ****************************************************************************
-# *
-# *  Redistribution and use in source and binary forms, with or without
-# *  modification, are permitted provided that the following conditions are
-# *  met:
-# *
-# *    Redistributions of source code must retain the above copyright notice,
-# *    this list of conditions and the following disclaimer.
-# *
-# *    Redistributions in binary form must reproduce the above copyright
-# *    notice, this list of conditions and the following disclaimer in the
-# *     documentation and/or other materials provided with the distribution.
-# *
-# *    Neither the name of Texas Instruments Incorporated nor the names of its
-# *    contributors may be used to endorse or promote products derived from
-# *    this software without specific prior written permission.
-# *
-# *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-# *  PARTICULAR TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# *  A PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT  OWNER OR
-# *  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# *  EXEMPLARY, ORCONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# *  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# *  LIABILITY, WHETHER IN CONTRACT,  STRICT LIABILITY, OR TORT (INCLUDING
-# *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# *
-# ****************************************************************************
-
-
-# ****************************************************************************
-# Sample mmW demo UART output parser script - should be invoked using python3
-#       ex: python3 mmw_demo_example_script.py <recorded_dat_file_from_Visualizer>.dat
-#
-# Notes:
-#   1. The parser_mmw_demo script will output the text version 
-#      of the captured files on stdio. User can redirect that output to a log file, if desired
-#   2. This example script also outputs the detected point cloud data in mmw_demo_output.csv 
-#      to showcase how to use the output of parser_one_mmw_demo_output_packet
-# ****************************************************************************
 import csv
 from datetime import datetime
 import serial
@@ -52,6 +8,8 @@ import sys
 # import the parser function 
 from parser_mmw_demo import parser_one_mmw_demo_output_packet
 
+# Time between frames in seconds
+REFRESH_TIME = 1
 
 # Change the configuration file name
 configFileName = '3d_xwr68xxconfig.cfg'
@@ -352,7 +310,7 @@ class IWRAPP:
         while(1):
             dataOk = self.onNewData()
             if(dataOk):
-                time.sleep(1)
+                time.sleep(REFRESH_TIME)
             else:
                 time.sleep(0.1)
 
