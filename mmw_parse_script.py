@@ -12,13 +12,13 @@ from parser_mmw_demo import parser_one_mmw_demo_output_packet
 REFRESH_TIME = 1
 
 # Change the configuration file name
-configFileName = '3d_xwr68xxconfig.cfg'
+configFileName = 'area_scanner_68xx_ISK.cfg'
 
 # Change to output to csv
 OUTPUT_TO_CSV = True
 outpout_file_path = configFileName[:-4]+'_output.csv'
 # Change the debug variable to use print()
-DEBUG = False
+DEBUG = True
 
 # Constants
 maxBufferSize = 2**15
@@ -43,12 +43,12 @@ def serialConfig(configFileName):
     # Open the serial ports for the configuration and the data ports
     
     # Raspberry pi
-    CLIport = serial.Serial('/dev/ttyUSB0', 115200)
-    Dataport = serial.Serial('/dev/ttyUSB1', 921600)
+    # CLIport = serial.Serial('/dev/ttyUSB0', 115200)
+    # Dataport = serial.Serial('/dev/ttyUSB1', 921600)
     
     # # Windows
-    # CLIport = serial.Serial('COM8', 115200)
-    # Dataport = serial.Serial('COM7', 921600)
+    CLIport = serial.Serial('COM8', 115200)
+    Dataport = serial.Serial('COM7', 921600)
 
     # Read the configuration file and send it to the board
     config = [line.rstrip('\r\n') for line in open(configFileName)]
@@ -203,6 +203,7 @@ def readAndParseData14xx(Dataport, configParameters):
         # Check the parser result
         if(DEBUG):
             print ("Parser result: ", parser_result)
+            print(readBuffer.hex())
         if (parser_result == 0): 
             totalBytesParsed += (headerStartIndex+totalPacketNumBytes)    
             numFramesParsed+=1
