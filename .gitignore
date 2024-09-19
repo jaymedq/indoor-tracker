@@ -1,32 +1,48 @@
-# Prerequisites
-*.d
+# Ignore build directories
+/build/
+out/
+bin/
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# Ignore CMake-generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
 
-# Precompiled Headers
-*.gch
-*.pch
+# Ignore Visual Studio files
+*.sln
+*.vcxproj*
+*.ncb
+*.suo
+*.user
+*.pdb
+*.opendb
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# Ignore temporary files
+*.tmp
+*.swp
+*.log
 
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
+# Ignore executables and object files
 *.exe
 *.out
-*.app
+*.obj
+*.o
+*.a
+*.lib
+*.dll
+*.so
+*.pyc
+
+# Ignore debugging files
+*.dSYM/
+*.stackdump
+*.core
+
+# Ignore IDE-specific files (e.g., VSCode, CLion, etc.)
+.vscode/
+.idea/
+*.iml
+
+# Ignore specific files
+input.txt

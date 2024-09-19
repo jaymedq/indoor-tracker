@@ -4,8 +4,9 @@
  */
 
 #include "AreaScannerFrame.hpp"
+#include <iostream>
 
-bool AreaScannerFrame::parse(const std::vector<uint8_t> &data) override
+bool AreaScannerFrame::parse(const std::vector<uint8_t> &data)
 {
     if (data.size() < 44)
     {
@@ -31,7 +32,7 @@ bool AreaScannerFrame::parse(const std::vector<uint8_t> &data) override
     return true;
 }
 
-void AreaScannerFrame::display() const override
+void AreaScannerFrame::display() const
 {
     std::cout << "AreaScannerFrame\n";
     std::cout << "Version: " << version << "\n";

@@ -3,6 +3,9 @@
  *   All rights reserved.
  */
 
+#if !defined(DEMO_FRAME_HPP)
+#define DEMO_FRAME_HPP
+
 #include "IFrame.hpp"
 
 class DemoFrame : public IFrame
@@ -27,3 +30,5 @@ private:
     void parseTLVs(const std::vector<uint8_t> &data, int tlvStart, int numDetObj,
                    int totalPacketNumBytes) const;
 };
+
+#endif // DEMO_FRAME_HPP

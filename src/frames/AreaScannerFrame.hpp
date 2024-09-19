@@ -2,6 +2,8 @@
  *   Copyright (c) 2024 Jayme Queiroz CPGEI
  *   All rights reserved.
  */
+#if !defined(AREA_SCANNER_FRAME_HPP)
+#define AREA_SCANNER_FRAME_HPP
 
 #include "IFrame.hpp"
 
@@ -27,3 +29,5 @@ private:
     bool checkMagicPattern(const uint8_t *data) const;
     uint32_t getUint32(const std::vector<uint8_t> &data, int offset) const;
 };
+
+#endif // AREA_SCANNER_FRAME_HPP

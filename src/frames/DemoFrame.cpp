@@ -4,9 +4,10 @@
  */
 
 #include "DemoFrame.hpp"
+#include <iostream>
+#include <cmath>
 
-using namespace DemoFrame;
-bool parse(const std::vector<uint8_t> &data) override
+bool DemoFrame::parse(const std::vector<uint8_t> &data)
 {
     const int headerNumBytes = 40;
     const float PI = 3.14159265;
@@ -52,29 +53,29 @@ bool parse(const std::vector<uint8_t> &data) override
     return true;
 }
 
-void display() const override
+void DemoFrame::display() const
 {
     std::cout << "DemoFrame parsed successfully\n";
 }
 
 // Helper methods (same as before)
-uint32_t getUint32(const uint8_t *data) const
+uint32_t DemoFrame::getUint32(const uint8_t *data) const
 {
     return (data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24));
 }
 
-uint16_t getUint16(const uint8_t *data) const
+uint16_t DemoFrame::getUint16(const uint8_t *data) const
 {
     return (data[0] + (data[1] << 8));
 }
 
-bool checkMagicPattern(const uint8_t *data) const
+bool DemoFrame::checkMagicPattern(const uint8_t *data) const
 {
     return (data[0] == 2 && data[1] == 1 && data[2] == 4 && data[3] == 3 &&
             data[4] == 6 && data[5] == 5 && data[6] == 8 && data[7] == 7);
 }
 
-void parserHelper(const std::vector<uint8_t> &data, int &headerStartIndex,
+void DemoFrame::parserHelper(const std::vector<uint8_t> &data, int &headerStartIndex,
                   int &totalPacketNumBytes, int &numDetObj, int &numTlv,
                   int &subFrameNumber) const
 {
@@ -101,7 +102,7 @@ void parserHelper(const std::vector<uint8_t> &data, int &headerStartIndex,
     subFrameNumber = getUint32(data.data() + headerStartIndex + 36);
 }
 
-void parseTLVs(const std::vector<uint8_t> &data, int tlvStart, int numDetObj,
+void DemoFrame::parseTLVs(const std::vector<uint8_t> &data, int tlvStart, int numDetObj,
                int totalPacketNumBytes) const
 {
     const float PI = 3.14159265;
