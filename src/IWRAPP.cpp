@@ -9,6 +9,7 @@
 #include <chrono>
 #include <unistd.h>
 #include "../third-party/include/serial/serial.h"
+#include "parser.hpp"
 
 // Define constants similar to the Python script
 const std::string CONFIG_FILE_NAME = "../cfg/area_scanner_68xx_ISK.cfg";
@@ -46,6 +47,10 @@ public:
             if (!byteVec.empty()) {
                 std::cout << "Data received, size: " << byteVec.size() << std::endl;
                 // Add parsing logic here similar to your Python parser
+                auto frame = createFrame(byteVec);
+                if (!(frame && frame->parse(byteVec))) {
+                    std::cerr << "Failed to parse frame\n";
+                }
             }
             usleep(REFRESH_TIME);
         }
