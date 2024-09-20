@@ -12,7 +12,7 @@ from parser_mmw_demo import parser_one_mmw_demo_output_packet
 REFRESH_TIME = 1
 
 # Change the configuration file name
-configFileName = 'area_scanner_68xx_ISK.cfg'
+configFileName = 'cfg/area_scanner_68xx_ISK.cfg'
 
 # Change to output to csv
 OUTPUT_TO_CSV = True
