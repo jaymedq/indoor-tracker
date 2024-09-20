@@ -7,7 +7,7 @@
 #include <iostream>
 #include <cmath>
 
-bool DemoFrame::parse(const std::vector<uint8_t> &data)
+bool DemoFrame::parse(std::vector<uint8_t> &data)
 {
     const int headerNumBytes = 40;
     const float PI = 3.14159265;

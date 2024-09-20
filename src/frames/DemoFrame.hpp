@@ -11,7 +11,7 @@
 class DemoFrame : public IFrame
 {
 public:
-    bool parse(const std::vector<uint8_t> &data) override;
+    bool parse(std::vector<uint8_t> &data) override;
 
     void display() const override;
 
