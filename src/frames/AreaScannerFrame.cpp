@@ -7,26 +7,26 @@
 #include <iostream>
 #include <cstring>
 
-bool AreaScannerFrame::parse(std::vector<uint8_t> &data)
-{
+bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
+    data = inputData; // Copy input data to the class member
     uint8_t* frameData = data.data();
     uint32_t frameLength = data.size();
-    MmwDemo_output_message_header_t* header = reinterpret_cast<MmwDemo_output_message_header_t*>(frameData);
+    header = *reinterpret_cast<MmwDemo_output_message_header_t*>(frameData);
 
     // Verify magic word for frame validity
     const uint16_t magicWordExpected[4] = {0x0102, 0x0304, 0x0506, 0x0708};
-    if (std::memcmp(header->magicWord, magicWordExpected, sizeof(magicWordExpected)) != 0) {
+    if (std::memcmp(header.magicWord, magicWordExpected, sizeof(magicWordExpected)) != 0) {
         std::cerr << "Invalid magic word!" << std::endl;
         return false;
     }
 
-    std::cout << "Frame Number: " << header->frameNumber << std::endl;
-    std::cout << "Detected Objects: " << header->numDetectedObj << std::endl;
-    std::cout << "Number of TLVs: " << header->numTLVs << std::endl;
+    std::cout << "Frame Number: " << header.frameNumber << std::endl;
+    std::cout << "Detected Objects: " << header.numDetectedObj << std::endl;
+    std::cout << "Number of TLVs: " << header.numTLVs << std::endl;
 
     // Iterate over TLVs
     uint8_t* tlvPtr = frameData + sizeof(MmwDemo_output_message_header_t);
-    for (uint32_t i = 0; i < header->numTLVs; ++i) {
+    for (uint32_t i = 0; i < header.numTLVs; ++i) {
         MmwDemo_output_message_tl_t* tlv = reinterpret_cast<MmwDemo_output_message_tl_t*>(tlvPtr);
 
         // Parse the payload associated with the TLV
@@ -42,15 +42,15 @@ bool AreaScannerFrame::parse(std::vector<uint8_t> &data)
 void AreaScannerFrame::display() const
 {
     std::cout << "AreaScannerFrame\n";
-    std::cout << "Version: " << version << "\n";
-    std::cout << "Total Packet Length: " << totalPacketLength << "\n";
-    std::cout << "Platform: " << platform << "\n";
-    std::cout << "Frame Number: " << frameNumber << "\n";
-    std::cout << "Time in CPU Cycles: " << timeCpuCycles << "\n";
-    std::cout << "Num Detected Objects: " << numDetectedObj << "\n";
-    std::cout << "Num TLVs: " << numTlv << "\n";
-    std::cout << "Subframe Number: " << subFrameNumber << "\n";
-    std::cout << "Num Static Detected Objects: " << numStaticDetectedObj
+    std::cout << "Version: " << header.version << "\n";
+    std::cout << "Total Packet Length: " << header.totalPacketLen << "\n";
+    std::cout << "Platform: " << header.platform << "\n";
+    std::cout << "Frame Number: " << header.frameNumber << "\n";
+    std::cout << "Time in CPU Cycles: " << header.timeCpuCycles << "\n";
+    std::cout << "Num Detected Objects: " << header.numDetectedObj << "\n";
+    std::cout << "Num TLVs: " << header.numTLVs << "\n";
+    std::cout << "Subframe Number: " << header.subFrameNumber << "\n";
+    std::cout << "Num Static Detected Objects: " << header.numStaticDetectedObj
               << "\n";
 }
 
@@ -70,12 +70,15 @@ uint32_t AreaScannerFrame::getUint32(const std::vector<uint8_t> &data, int offse
 // Function to parse TLV data based on type
 void AreaScannerFrame::parseTLV(uint8_t* payload, uint32_t type, uint32_t length) {
     switch (type) {
-        case MMWDEMO_OUTPUT_MSG_DETECTED_POINTS: {
+        case MMWDEMO_OUTPUT_MSG_DETECTED_POINTS:
+        case MMWDEMO_OUTPUT_MSG_STATIC_DETECTED_POINTS:
+        {
             int numDetectedPoints = length / sizeof(DPIF_PointCloudCartesian_t);
             DPIF_PointCloudCartesian_t* detectedPoints = reinterpret_cast<DPIF_PointCloudCartesian_t*>(payload);
 
             std::cout << "Detected Points: " << numDetectedPoints << std::endl;
             for (int i = 0; i < numDetectedPoints; ++i) {
+                pointCloud.push_back(detectedPoints[i]);
                 std::cout << "Point " << i << ": (" << detectedPoints[i].x << ", " 
                           << detectedPoints[i].y << ", " << detectedPoints[i].z 
                           << "), Velocity: " << detectedPoints[i].velocity << std::endl;
@@ -83,9 +86,9 @@ void AreaScannerFrame::parseTLV(uint8_t* payload, uint32_t type, uint32_t length
             break;
         }
         case MMWDEMO_OUTPUT_MSG_STATS: {
-            MmwDemo_output_message_stats_t* stats = reinterpret_cast<MmwDemo_output_message_stats_t*>(payload);
-            std::cout << "Stats: InterFrameProcessingTime: " << stats->interFrameProcessingTime 
-                      << ", TransmitOutputTime: " << stats->transmitOutputTime << std::endl;
+            stats = *reinterpret_cast<MmwDemo_output_message_stats_t*>(payload);
+            std::cout << "Stats: InterFrameProcessingTime: " << stats.interFrameProcessingTime 
+                      << ", TransmitOutputTime: " << stats.transmitOutputTime << std::endl;
             break;
         }
         // Add cases for other message types as needed

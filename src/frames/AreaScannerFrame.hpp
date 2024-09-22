@@ -70,15 +70,10 @@ public:
     };
 
 private:
-    uint32_t version;
-    uint32_t totalPacketLength;
-    uint32_t platform;
-    uint32_t frameNumber;
-    uint32_t timeCpuCycles;
-    uint32_t numDetectedObj;
-    uint32_t numTlv;
-    uint32_t subFrameNumber;
-    uint32_t numStaticDetectedObj;
+    std::vector<uint8_t> data; // Store the data vector as a class member
+    MmwDemo_output_message_header_t header;
+    MmwDemo_output_message_stats_t stats;
+    std::vector<DPIF_PointCloudCartesian_t> pointCloud;
 
     bool checkMagicPattern(const uint8_t *data) const;
     uint32_t getUint32(const std::vector<uint8_t> &data, int offset) const;

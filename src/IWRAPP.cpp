@@ -5,7 +5,7 @@
 #include <sstream>
 #include <map>
 #include <ctime>
-#include <iomanip> 
+#include <iomanip>
 #include <chrono>
 #include <unistd.h>
 #include "../third-party/include/serial/serial.h"
@@ -16,43 +16,51 @@ const std::string CONFIG_FILE_NAME = "../cfg/area_scanner_68xx_ISK.cfg";
 const int REFRESH_TIME = 1000; // in milliseconds
 
 // Class to handle IWR6843 Application logic
-class IWRAPP {
+class IWRAPP
+{
 public:
-    IWRAPP(const std::string& cliPortName, const std::string& dataPortName)
+    IWRAPP(const std::string &cliPortName, const std::string &dataPortName)
         : cliPort(cliPortName, 115200, serial::Timeout::simpleTimeout(1000)),
           dataPort(dataPortName, 921600, serial::Timeout::simpleTimeout(1000)) {}
 
-    void configureSensor(const std::string& configFileName) {
+    void configureSensor(const std::string &configFileName)
+    {
         std::ifstream configFile(configFileName);
         std::string line;
-        while (std::getline(configFile, line)) {
+        while (std::getline(configFile, line))
+        {
             cliPort.write(line + "\n");
             std::cout << "Sent to CLI port: " << line << std::endl;
-            usleep(10);
+            usleep(10000); // Sleep for 10 milliseconds
         }
     }
 
-    std::vector<uint8_t> readData() {
+    std::vector<uint8_t> readData()
+    {
         std::vector<uint8_t> byteBuffer;
-        if (dataPort.available()) {
+        if (dataPort.available())
+        {
             std::string readBuffer = dataPort.read(dataPort.available());
             byteBuffer.insert(byteBuffer.end(), readBuffer.begin(), readBuffer.end());
         }
         return byteBuffer;
     }
 
-    void run() {
-        while (true) {
+    void run()
+    {
+        while (true)
+        {
             std::vector<uint8_t> byteVec = readData();
-            if (!byteVec.empty()) {
+            if (!byteVec.empty())
+            {
                 std::cout << "Data received, size: " << byteVec.size() << std::endl;
-                // Add parsing logic here similar to your Python parser
                 auto frame = createFrame(byteVec);
-                if (!(frame && frame->parse(byteVec))) {
+                if (!(frame && frame->parse(byteVec)))
+                {
                     std::cerr << "Failed to parse frame\n";
                 }
             }
-            usleep(REFRESH_TIME);
+            usleep(REFRESH_TIME); // Sleep for REFRESH_TIME milliseconds
         }
     }
 
@@ -61,15 +69,26 @@ private:
     serial::Serial dataPort;
 };
 
-int main() {
-    try {
-        // Configure the serial ports
-        IWRAPP app("COM8", "COM7"); // Use appropriate port names for Raspberry Pi and ESP32
-        app.configureSensor(CONFIG_FILE_NAME);
+int main(int argc, char *argv[])
+{
+    // Check if the correct number of arguments is provided
+    if (argc != 3)
+    {
+        std::cerr << "Usage: " << argv[0] << " <CLI_COM_PORT> <DATA_COM_PORT>" << std::endl;
+        return 1;
+    }
 
-        // Create an instance of the application and run it
+    std::string cliPortName = argv[1];
+    std::string dataPortName = argv[2];
+
+    try
+    {
+        IWRAPP app(cliPortName, dataPortName);
+        app.configureSensor(CONFIG_FILE_NAME);
         app.run();
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Exception: " << e.what() << std::endl;
     }
 
