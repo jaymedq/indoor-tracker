@@ -8,10 +8,10 @@
 #include <cstring>
 
 bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
-    data = inputData; // Copy input data to the class member
-    uint8_t* frameData = data.data();
-    uint32_t frameLength = data.size();
-    header = *reinterpret_cast<MmwDemo_output_message_header_t*>(frameData);
+    uint32_t currentOffset = 0ULL;
+
+    memcpy(&header,  &inputData.at(currentOffset), sizeof(header));
+    currentOffset += sizeof(header);
 
     // Verify magic word for frame validity
     const uint16_t magicWordExpected[4] = {0x0102, 0x0304, 0x0506, 0x0708};
@@ -25,16 +25,14 @@ bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
     std::cout << "Number of TLVs: " << header.numTLVs << std::endl;
 
     // Iterate over TLVs
-    uint8_t* tlvPtr = frameData + sizeof(MmwDemo_output_message_header_t);
     for (uint32_t i = 0; i < header.numTLVs; ++i) {
-        MmwDemo_output_message_tl_t* tlv = reinterpret_cast<MmwDemo_output_message_tl_t*>(tlvPtr);
+        MmwDemo_output_message_tl_t tl = {};
+        memcpy(&tl,  &inputData.at(currentOffset), sizeof(tl));
+        currentOffset += sizeof(tl);
 
         // Parse the payload associated with the TLV
-        uint8_t* payload = tlvPtr + sizeof(MmwDemo_output_message_tl_t);
-        parseTLV(payload, tlv->type, tlv->length);
-
-        // Move to the next TLV (type + length + payload size)
-        tlvPtr += sizeof(MmwDemo_output_message_tl_t) + tlv->length;
+        std::vector<uint8_t> tlvSlice(inputData.begin() + currentOffset, inputData.end());
+        parseTLV(tlvSlice, tl.type, tl.length);
     }
     return true;
 }
@@ -68,16 +66,22 @@ uint32_t AreaScannerFrame::getUint32(const std::vector<uint8_t> &data, int offse
 }
 
 // Function to parse TLV data based on type
-void AreaScannerFrame::parseTLV(uint8_t* payload, uint32_t type, uint32_t length) {
+void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uint32_t length) {
     switch (type) {
         case MMWDEMO_OUTPUT_MSG_DETECTED_POINTS:
         case MMWDEMO_OUTPUT_MSG_STATIC_DETECTED_POINTS:
         {
-            int numDetectedPoints = length / sizeof(DPIF_PointCloudCartesian_t);
-            DPIF_PointCloudCartesian_t* detectedPoints = reinterpret_cast<DPIF_PointCloudCartesian_t*>(payload);
+            if (length % sizeof(DPIF_PointCloudCartesian_t) != 0) {
+                std::cerr << "Payload size mismatch for detected points. Length: " << length 
+                          << ", expected multiple of " << sizeof(DPIF_PointCloudCartesian_t) << std::endl;
+                return;
+            }
+            uint16_t numDetectedPoints = length / sizeof(DPIF_PointCloudCartesian_t);
+            std::vector<DPIF_PointCloudCartesian_t> detectedPoints(numDetectedPoints);
+            std::memcpy(detectedPoints.data(), payload.data(), length);
 
             std::cout << "Detected Points: " << numDetectedPoints << std::endl;
-            for (int i = 0; i < numDetectedPoints; ++i) {
+            for (int i = 0; i < detectedPoints.size(); ++i) {
                 pointCloud.push_back(detectedPoints[i]);
                 std::cout << "Point " << i << ": (" << detectedPoints[i].x << ", " 
                           << detectedPoints[i].y << ", " << detectedPoints[i].z 
@@ -86,7 +90,12 @@ void AreaScannerFrame::parseTLV(uint8_t* payload, uint32_t type, uint32_t length
             break;
         }
         case MMWDEMO_OUTPUT_MSG_STATS: {
-            stats = *reinterpret_cast<MmwDemo_output_message_stats_t*>(payload);
+            if (payload.size() < sizeof(stats)) {
+                std::cerr << "Payload size mismatch for stats. Expected: " << sizeof(stats)
+                          << ", got: " << payload.size() << std::endl;
+                return;
+            }
+            std::memcpy(&stats, payload.data(), sizeof(stats));
             std::cout << "Stats: InterFrameProcessingTime: " << stats.interFrameProcessingTime 
                       << ", TransmitOutputTime: " << stats.transmitOutputTime << std::endl;
             break;

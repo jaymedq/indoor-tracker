@@ -77,7 +77,7 @@ private:
 
     bool checkMagicPattern(const uint8_t *data) const;
     uint32_t getUint32(const std::vector<uint8_t> &data, int offset) const;
-    void parseTLV(uint8_t* payload, uint32_t type, uint32_t length);
+    void parseTLV(std::vector<uint8_t> payload, uint32_t type, uint32_t length);
 };
 
 #endif // AREA_SCANNER_FRAME_HPP
