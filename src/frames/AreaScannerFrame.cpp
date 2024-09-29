@@ -6,6 +6,11 @@
 #include "AreaScannerFrame.hpp"
 #include <iostream>
 #include <cstring>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <chrono>
 
 bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
     uint32_t currentOffset = 0ULL;
@@ -50,6 +55,75 @@ void AreaScannerFrame::display() const
     std::cout << "Subframe Number: " << header.subFrameNumber << "\n";
     std::cout << "Num Static Detected Objects: " << header.numStaticDetectedObj
               << "\n";
+}
+
+void AreaScannerFrame::toCsv(const std::string& filePath) const {
+
+    if(pointCloud.size() < 1)
+    {
+        std::cout << "No pointcloud to be written to: " << filePath << std::endl;
+    }
+    else
+    {
+        // Open the file in append mode
+        std::ofstream file(filePath, std::ios::app);
+
+        // Check if the file was successfully opened
+        if (!file.is_open()) {
+            std::cerr << "Failed to open the file: " << filePath << std::endl;
+            return;
+        }
+
+        // Get the current time and format it as dd/MM/yyyy HH:mm
+        auto now = std::chrono::system_clock::now();
+        std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+        std::tm *local_time = std::localtime(&now_time);
+
+        std::ostringstream timeStream;
+        timeStream << std::put_time(local_time, "%d/%m/%Y %H:%M:%S");
+
+        // Write the numObj (number of detected objects)
+        file << pointCloud.size() << ",";
+
+        // Write x coordinates in square brackets
+        file << "\"[";
+        for (size_t i = 0; i < pointCloud.size(); ++i) {
+            file << pointCloud[i].x;
+            if (i < pointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+
+        // Write y coordinates in square brackets
+        file << "\"[";
+        for (size_t i = 0; i < pointCloud.size(); ++i) {
+            file << pointCloud[i].y;
+            if (i < pointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+
+        // Write z coordinates in square brackets
+        file << "\"[";
+        for (size_t i = 0; i < pointCloud.size(); ++i) {
+            file << pointCloud[i].z;
+            if (i < pointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+
+        // Write the timestamp
+        file << timeStream.str() << "\n";
+
+        // Close the file
+        file.close();
+
+        // Inform the user that the data has been successfully written
+        std::cout << "Point cloud data has been written to: " << filePath << std::endl;
+    }
 }
 
 bool AreaScannerFrame::checkMagicPattern(const uint8_t *data) const

@@ -15,6 +15,8 @@ public:
 
     void display() const override;
 
+    void toCsv(const std::string &path) const override {};
+
 private:
     // Helper methods (same as before)
     uint32_t getUint32(const uint8_t *data) const;

@@ -15,6 +15,8 @@ public:
 
     void display() const override;
 
+    void toCsv(const std::string &path) const;
+
     // Define message types as provided
     enum MmwDemo_output_message_type_e {
         MMWDEMO_OUTPUT_MSG_DETECTED_POINTS = 1,

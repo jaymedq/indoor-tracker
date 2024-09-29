@@ -13,7 +13,7 @@
 
 // Define constants similar to the Python script
 const std::string CONFIG_FILE_NAME = "../cfg/area_scanner_68xx_ISK.cfg";
-const int REFRESH_TIME = 1000; // in milliseconds
+const int REFRESH_TIME = 1; // in seconds
 
 // Class to handle IWR6843 Application logic
 class IWRAPP
@@ -59,8 +59,12 @@ public:
                 {
                     std::cerr << "Failed to parse frame\n";
                 }
+                else
+                {
+                    frame->toCsv("output.csv");
+                }
             }
-            usleep(REFRESH_TIME); // Sleep for REFRESH_TIME milliseconds
+            sleep(REFRESH_TIME); // Sleep for REFRESH_TIME microseconds
         }
     }
 
@@ -72,14 +76,18 @@ private:
 int main(int argc, char *argv[])
 {
     // Check if the correct number of arguments is provided
+    std::string cliPortName = "COM8";
+    std::string dataPortName = "COM7";
     if (argc != 3)
     {
         std::cerr << "Usage: " << argv[0] << " <CLI_COM_PORT> <DATA_COM_PORT>" << std::endl;
-        return 1;
+    }
+    else
+    {
+        std::string cliPortName = argv[1];
+        std::string dataPortName = argv[2];
     }
 
-    std::string cliPortName = argv[1];
-    std::string dataPortName = argv[2];
 
     try
     {
