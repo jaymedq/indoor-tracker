@@ -67,8 +67,6 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
     {
         // Open the file in append mode
         std::ofstream file(filePath, std::ios::app);
-
-        // Check if the file was successfully opened
         if (!file.is_open()) {
             std::cerr << "Failed to open the file: " << filePath << std::endl;
             return;
@@ -81,11 +79,7 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
 
         std::ostringstream timeStream;
         timeStream << std::put_time(local_time, "%d/%m/%Y %H:%M:%S");
-
-        // Write the numObj (number of detected objects)
         file << pointCloud.size() << ",";
-
-        // Write x coordinates in square brackets
         file << "\"[";
         for (size_t i = 0; i < pointCloud.size(); ++i) {
             file << pointCloud[i].x;
@@ -94,8 +88,6 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
             }
         }
         file << "]\",";
-
-        // Write y coordinates in square brackets
         file << "\"[";
         for (size_t i = 0; i < pointCloud.size(); ++i) {
             file << pointCloud[i].y;
@@ -104,8 +96,6 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
             }
         }
         file << "]\",";
-
-        // Write z coordinates in square brackets
         file << "\"[";
         for (size_t i = 0; i < pointCloud.size(); ++i) {
             file << pointCloud[i].z;
@@ -114,14 +104,8 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
             }
         }
         file << "]\",";
-
-        // Write the timestamp
         file << timeStream.str() << "\n";
-
-        // Close the file
         file.close();
-
-        // Inform the user that the data has been successfully written
         std::cout << "Point cloud data has been written to: " << filePath << std::endl;
     }
 }
@@ -174,7 +158,6 @@ void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uin
                       << ", TransmitOutputTime: " << stats.transmitOutputTime << std::endl;
             break;
         }
-        // Add cases for other message types as needed
         default:
             std::cout << "Unknown TLV type: " << type << std::endl;
             break;
