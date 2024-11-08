@@ -20,9 +20,9 @@ def update(frame):
     ax.scatter(xs.values[0], ys.values[0], zs.values[0], c='b', marker='o')
     
     # Set axis limits
-    ax.set_xlim([0, 3])
-    ax.set_ylim([-3, 3])
-    ax.set_zlim([-1, 3])
+    ax.set_xlim([0, 6])
+    ax.set_ylim([-6, 6])
+    ax.set_zlim([-1, 6])
     
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
