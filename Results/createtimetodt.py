@@ -1,7 +1,15 @@
 import pandas as pd
 from datetime import datetime
-# Load data
-data = pd.read_csv("Resultados/resultado_RADAR_C3_PRD_PA_178_JM.csv",sep=';')
-dt_object = data['CreateTime'].apply(datetime.fromtimestamp)
-formatted_time = dt_object.strftime('%Y-%m-%d %H:%M:%S')
-data['CreateTime'] = formatted_time
+
+FILENAME = "resultado_RADAR_C3_PRD_PA_178_JM"
+data = pd.read_csv(f"{FILENAME}.csv", sep=';')
+
+def createTimeToDt(row):
+    epoch_in_seconds = row['CreateTime'] / 1e6  
+    return datetime.fromtimestamp(epoch_in_seconds).strftime('%Y-%m-%d %H:%M:%S')
+
+data['CreateTime'] = data.apply(createTimeToDt, axis=1)
+
+print(data.head())
+
+data.to_csv(f"{FILENAME}_datetime.csv", index=False)
