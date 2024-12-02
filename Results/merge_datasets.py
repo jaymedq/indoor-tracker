@@ -24,22 +24,25 @@ def createTimeToDt(row):
     try:
         epoch_in_seconds = row["CreateTime"]
         return datetime.fromtimestamp(epoch_in_seconds).strftime("%Y-%m-%d %H:%M:%S")
-
     except Exception as e:
         print(row)
         raise e
 
+all_fused_data = []
+
+mmwave_data = pd.read_csv(f"{MMWAVE_DATASET_FILE}.csv")
+mmwave_data["timestamp"] = pd.to_datetime(
+    mmwave_data["timestamp"], format="%d/%m/%Y %H:%M:%S"
+)
+
 for ble_file in BLE_DATASET_FILES:
     ble_data = pd.read_csv(f"{ble_file}.csv")
     ble_data["CreateTime"] = ble_data.apply(createTimeToDt, axis=1)
-    mmwave_data = pd.read_csv(f"{MMWAVE_DATASET_FILE}.csv")
 
     ble_data["CreateTime"] = pd.to_datetime(
         ble_data["CreateTime"], format="%Y-%m-%d %H:%M:%S"
     )
-    mmwave_data["timestamp"] = pd.to_datetime(
-        mmwave_data["timestamp"], format="%d/%m/%Y %H:%M:%S"
-    )
+    
     fusion_data = pd.merge(
         ble_data, mmwave_data, left_on="CreateTime", right_on="timestamp", how="inner"
     )
@@ -50,4 +53,10 @@ for ble_file in BLE_DATASET_FILES:
 
     BLE_MMWAVE_FUSION_FILENAME = f"{ble_file}_mmwave_fusion.csv"
     fusion_data.to_csv(BLE_MMWAVE_FUSION_FILENAME, index=False)
-    print(f"Fusion dataset saved asf {BLE_MMWAVE_FUSION_FILENAME}")
+    print(f"Fusion dataset saved as {BLE_MMWAVE_FUSION_FILENAME}")
+    all_fused_data.append(fusion_data)
+
+final_fused_dataset = pd.concat(all_fused_data, ignore_index=True)
+FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
+final_fused_dataset.to_csv(FINAL_MERGED_FILENAME, index=False)
+print(f"Final merged dataset saved as {FINAL_MERGED_FILENAME}")
