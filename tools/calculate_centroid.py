@@ -56,15 +56,7 @@ def calculate_centroid(row):
     centroid_z = round(np.mean(row['z']), 2)
     return [centroid_x, centroid_y, centroid_z]
 
-def calculate_real_xyz(row):
-    centroid = calculate_centroid(row)
-    possible_points = np.array(list(annotated_points.values()))
-    centroid = np.array(centroid)
-    distances = np.linalg.norm(possible_points - centroid, axis=1)
-    return possible_points[np.argmin(distances)].tolist()
-
 df['centroid_xyz'] = df.apply(calculate_centroid, axis=1)
-df['real_xyz'] = df.apply(calculate_real_xyz, axis=1)
 
 df.to_csv(output_file, index = False)
 
