@@ -3,6 +3,9 @@
 out/
 bin/
 
+# Ignore python virtual environment
+venv/
+
 # Ignore CMake-generated files
 CMakeFiles/
 CMakeCache.txt
