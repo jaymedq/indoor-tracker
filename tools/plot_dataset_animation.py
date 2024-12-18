@@ -1,11 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, FFMpegWriter
-from IPython import display 
+from matplotlib.animation import FuncAnimation, HTMLWriter
 
 # Load data
 data = pd.read_csv("../Results/ble_mmwave_fusion_all.csv")
-data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y/%m/%d %H:%M:%S')
+data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
 
 # Ensure stringified lists are parsed correctly
 data['x'] = data['x'].apply(eval)
@@ -69,8 +68,8 @@ def update(frame):
 # Create animation
 ani = FuncAnimation(fig, update, frames=sorted(data['timestamp'].unique()), blit=False, repeat=True, interval=250, repeat_delay=3000)
 
-writervideo = FFMpegWriter(fps=15)
-ani.save('plot_dataset_animation_output.mp4', writer=writervideo) 
+writervideo = HTMLWriter(fps=15)
+ani.save('plot_dataset_animation_output.html', writer=writervideo) 
 
 # Display the plot
 plt.show()
