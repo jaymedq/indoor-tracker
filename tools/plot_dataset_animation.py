@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, HTMLWriter
+from matplotlib.animation import FuncAnimation, PillowWriter
 
 # Load data
 data = pd.read_csv("../Results/ble_mmwave_fusion_all.csv")
@@ -58,7 +58,7 @@ def update(frame):
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
     ax.set_zlabel('Z axis')
-    ax.set_title(f"Point Cloud at Timestamp: {frame}")
+    ax.set_title(f"Timestamp: {frame}, MSRE: {timestamp_data['msre']}")
     
     # Add legend
     ax.legend()
@@ -68,8 +68,8 @@ def update(frame):
 # Create animation
 ani = FuncAnimation(fig, update, frames=sorted(data['timestamp'].unique()), blit=False, repeat=True, interval=250, repeat_delay=3000)
 
-writervideo = HTMLWriter(fps=15)
-ani.save('plot_dataset_animation_output.html', writer=writervideo) 
+video_writer = PillowWriter(fps=15)
+ani.save('plot_dataset_animation_output.gif', writer=video_writer) 
 
 # Display the plot
 plt.show()
