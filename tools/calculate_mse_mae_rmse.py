@@ -95,7 +95,7 @@ def calculate_mse_mae_rmse(row: pd.DataFrame) -> dict:
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("Results/ble_mmwave_fusion_all.csv")
+    data = pd.read_csv("ble_mmwave_fusion_all.csv")
     if "real_xyz" in data.columns:
         data["real_xyz"] = data["real_xyz"].apply(eval)
     if "centroid_xyz" in data.columns:

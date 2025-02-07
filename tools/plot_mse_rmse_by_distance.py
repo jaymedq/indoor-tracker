@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mse
 
 # Load dataset
-data = pd.read_csv("Results/ble_mmwave_fusion_all.csv")
+data = pd.read_csv("ble_mmwave_fusion_all.csv")
 
 # Ensure stringified lists are parsed correctly
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
