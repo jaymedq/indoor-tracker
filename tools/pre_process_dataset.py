@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+from pykalman import KalmanFilter
 
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
@@ -51,7 +52,7 @@ def fuse_datasets():
     )
 
     for ble_file in BLE_DATASET_FILES:
-        ble_data = pd.read_csv(f"Resultados/{ble_file}.csv")
+        ble_data = pd.read_csv(f"Results/lab-experiment-results/{ble_file}.csv")
         ble_data["CreateTime"] = ble_data.apply(createTimeToDt, axis=1)
 
         ble_data["CreateTime"] = pd.to_datetime(
@@ -134,6 +135,19 @@ def calculate_mae(A: np.ndarray, B: np.ndarray) -> float:
     return np.nanmean((A - B).__abs__())
 
 
+transition_matrix = [[1, 0], [0, 1]]  # Constant movement
+observation_matrix = [[1, 0], [0, 1]]  # LOS
+
+def apply_kalman_filter(df, x_col, y_col):
+    observations = df[[x_col, y_col]].values
+    kf = KalmanFilter(transition_matrices=transition_matrix,
+                       observation_matrices=observation_matrix,
+                       initial_state_mean=observations[0],
+                       observation_covariance=np.eye(2),
+                       transition_covariance=np.eye(2) * 0.01)
+    smoothed_states, _ = kf.smooth(observations)
+    return smoothed_states
+
 def evaluate_metrics(data):
     data["real_xyz"] = data["real_xyz"].apply(eval)
     # data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
@@ -209,6 +223,38 @@ def evaluate_metrics(data):
         "mae_fusao": mae_fusao,
     }
 
+def apply_kalman_filter(df, x_col, y_col):
+    observations = df[[x_col, y_col]].values
+    kf = KalmanFilter(transition_matrices=transition_matrix,
+                       observation_matrices=observation_matrix,
+                       initial_state_mean=observations[0],
+                       observation_covariance=np.eye(2),
+                       transition_covariance=np.eye(2) * 0.01)
+    smoothed_states, _ = kf.smooth(observations)
+    return smoothed_states
+
+def track_to_track_fusion(df):
+    fusion_x = []
+    fusion_y = []
+    for i in range(len(df)):
+        cov_ble = np.array([[0.5, 0], [0, 0.5]])
+        cov_mmwave = np.array([[0.3, 0], [0, 0.3]])
+
+        w_ble = np.linalg.inv(cov_ble)
+        w_mmwave = np.linalg.inv(cov_mmwave)
+
+        total_weight = w_ble + w_mmwave
+        w_ble /= total_weight
+        w_mmwave /= total_weight
+        
+        fused_x = w_ble[0, 0] * df.loc[i, "X_est_TRIANG_KF"] + w_mmwave[0, 0] * df.loc[i, "X_mmwave_kf"]
+        fused_y = w_ble[1, 1] * df.loc[i, "Y_est_TRIANG_KF"] + w_mmwave[1, 1] * df.loc[i, "Y_mmwave_kf"]
+        
+        fusion_x.append(fused_x)
+        fusion_y.append(fused_y)
+    
+    return fusion_x, fusion_y
+
 # --- MAIN PIPELINE EXECUTION ---
 if __name__ == "__main__":
     print("Starting Sensor Fusion...")
@@ -216,6 +262,19 @@ if __name__ == "__main__":
 
     print("\nProcessing Centroids...")
     centroid_data = process_centroids(fused_data)
+
+    print("\nApplying Kalman Filter...")
+    centroid_data["X_mmw_centroid"] = [x[0] for x in centroid_data["centroid_xyz"].values]
+    centroid_data["Y_mmw_centroid"] = [x[1] for x in centroid_data["centroid_xyz"].values]
+    ble_kf = apply_kalman_filter(centroid_data, "X_est_TRIANG_KF", "Y_est_TRIANG_KF")
+    mmwave_kf = apply_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid")
+
+    centroid_data["X_mmwave_kf"], centroid_data["Y_mmwave_kf"] = mmwave_kf[:, 0], mmwave_kf[:, 1]
+
+    fusion_x, fusion_y = track_to_track_fusion(centroid_data)
+    centroid_data["X_fused"], centroid_data["Y_fused"] = fusion_x, fusion_y
+
+    centroid_data.to_csv("FUSAO_PROCESSADA.csv", sep=';', index=False)
 
     print("\nEvaluating Error Metrics...")
     evaluate_metrics(centroid_data)

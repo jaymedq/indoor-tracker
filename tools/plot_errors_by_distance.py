@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mae
 
 # Load dataset
-data = pd.read_csv("ble_mmwave_fusion_all.csv")
+data = pd.read_csv("FUSAO_PROCESSADA.csv",sep=';')
 
 # Ensure stringified lists are parsed correctly
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
@@ -15,7 +15,7 @@ def calculate_distance_and_error(row):
     real = np.array(row["real_xyz"])
     centroid = np.array(row["centroid_xyz"])
     triang = np.array([row["X_est_TRIANG_KF"], row["Y_est_TRIANG_KF"], 1.78])
-    fusion = np.array([row["X_est_FUSAO"], row["Y_est_FUSAO"], 1.78])
+    fusion = np.array([row["X_fused"], row["X_fused"], 1.78])
 
     # Calculate distance to real point
     distance = np.linalg.norm(real)

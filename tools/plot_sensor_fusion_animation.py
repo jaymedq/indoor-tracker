@@ -7,7 +7,7 @@ from matplotlib.animation import FuncAnimation, FFMpegWriter
 from calculate_mse_mae_rmse import calculate_mse_mae_rmse
 
 # Load data using os.path to ensure the script can be run from any directory
-data = pd.read_csv(os.path.join(os.path.dirname(__file__), '..',"Results","ble_mmwave_fusion_all.csv"))
+data = pd.read_csv(os.path.join(os.path.dirname(__file__), '..',"FUSAO_PROCESSADA.csv"), sep=';')
 
 data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 
@@ -93,13 +93,26 @@ def update(frame_timestamp):
         label="BLE Fusion",
     )
 
+    # # plot BLE and mmw centroid fusion by adding the two centroids and dividing by 2
+    # if centroid:
+    #     ble_mmw_fusion_centroid = [(centroid[0] + ble_fusion[0]) / 2, (centroid[1] + ble_fusion[1]) / 2, (centroid[2] + ble_fusion[2]) / 2]
+    #     ax.scatter(
+    #         ble_mmw_fusion_centroid[0],
+    #         ble_mmw_fusion_centroid[1],
+    #         ble_mmw_fusion_centroid[2],
+    #         c="orange",
+    #         marker="^",
+    #         s=50,
+    #         label="BLE and MMW Fusion",
+    #     )
+
     # plot BLE and mmw centroid fusion by adding the two centroids and dividing by 2
     if centroid:
-        ble_mmw_fusion_centroid = [(centroid[0] + ble_fusion[0]) / 2, (centroid[1] + ble_fusion[1]) / 2, (centroid[2] + ble_fusion[2]) / 2]
+        kalmanttf = [timestamp_data['X_fused'], timestamp_data['Y_fused'], 1.78]
         ax.scatter(
-            ble_mmw_fusion_centroid[0],
-            ble_mmw_fusion_centroid[1],
-            ble_mmw_fusion_centroid[2],
+            kalmanttf[0],
+            kalmanttf[1],
+            kalmanttf[2],
             c="orange",
             marker="^",
             s=50,
