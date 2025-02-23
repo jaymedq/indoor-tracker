@@ -13,7 +13,7 @@ BLE_DATASET_FILES = [
     "resultado_RADAR_C3_PRD_P15_178_JM",
     "resultado_RADAR_C3_PRD_PA_178_JM",
 ]
-MMWAVE_DATASET_FILE = "ResultadoMMWave"
+MMWAVE_DATASET_FILE = "output_lab_tag_14_10_24"
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
 
@@ -237,6 +237,7 @@ def track_to_track_fusion(df):
     fusion_x = []
     fusion_y = []
     for i in range(len(df)):
+        # After improving KF applications, optimize these weights.
         cov_ble = np.array([[0.5, 0], [0, 0.5]])
         cov_mmwave = np.array([[0.3, 0], [0, 0.3]])
 
@@ -266,8 +267,15 @@ if __name__ == "__main__":
     print("\nApplying Kalman Filter...")
     centroid_data["X_mmw_centroid"] = [x[0] for x in centroid_data["centroid_xyz"].values]
     centroid_data["Y_mmw_centroid"] = [x[1] for x in centroid_data["centroid_xyz"].values]
+
     ble_kf = apply_kalman_filter(centroid_data, "X_est_TRIANG_KF", "Y_est_TRIANG_KF")
     mmwave_kf = apply_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid")
+    # Melhoria:
+    # Calcular a aplicação do filtro para ter uma variavel de "peso de kalman" para cada distancia.
+    # segmentar por distancia
+    # aplicar o filtro de kalman para cada distancia
+    # após aplicar a melhoria, otimizar os pesoss do ttf.
+    # ponderar com RSSI
 
     centroid_data["X_mmwave_kf"], centroid_data["Y_mmwave_kf"] = mmwave_kf[:, 0], mmwave_kf[:, 1]
 
