@@ -1,0 +1,6 @@
+Melhoria:
+Calcular a aplicação do filtro para ter uma variavel de "peso de kalman" para cada distancia.
+segmentar por distancia
+aplicar o filtro de kalman para cada distancia
+após aplicar a melhoria, otimizar os pesoss do ttf.
+ponderar com RSSI
