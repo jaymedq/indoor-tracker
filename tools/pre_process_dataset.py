@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 
 from pykalman import KalmanFilter
+from sklearn.model_selection import ParameterGrid
 
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
@@ -66,7 +67,8 @@ def fuse_datasets():
 
         for point in EXPERIMENT_POINTS.keys():
             if f"_{point}_" in ble_file:
-                fusion_data["real_xyz"] = f"{EXPERIMENT_POINTS[point]}"
+                fusion_data["real_xyz"] = [EXPERIMENT_POINTS[point]] * len(fusion_data)
+                fusion_data["distance_mmw"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - radar_placement)
 
         BLE_MMWAVE_FUSION_FILENAME = f"{ble_file}_mmwave_fusion.csv"
         fusion_data.to_csv(BLE_MMWAVE_FUSION_FILENAME, index=False)
@@ -138,20 +140,7 @@ def calculate_mae(A: np.ndarray, B: np.ndarray) -> float:
 transition_matrix = [[1, 0], [0, 1]]  # Constant movement
 observation_matrix = [[1, 0], [0, 1]]  # LOS
 
-def apply_kalman_filter(df, x_col, y_col):
-    observations = df[[x_col, y_col]].values
-    kf = KalmanFilter(transition_matrices=transition_matrix,
-                       observation_matrices=observation_matrix,
-                       initial_state_mean=observations[0],
-                       observation_covariance=np.eye(2),
-                       transition_covariance=np.eye(2) * 0.01)
-    smoothed_states, _ = kf.smooth(observations)
-    return smoothed_states
-
 def evaluate_metrics(data):
-    data["real_xyz"] = data["real_xyz"].apply(eval)
-    # data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
-
     # Extract real positions and estimated positions
     real_x = [x[0] for x in data["real_xyz"].values]
     real_y = [x[1] for x in data["real_xyz"].values]
@@ -223,38 +212,86 @@ def evaluate_metrics(data):
         "mae_fusao": mae_fusao,
     }
 
-def apply_kalman_filter(df, x_col, y_col):
+def apply_kalman_filter(df, x_col, y_col, params=None):
+    if params is None:
+        params = {}
     observations = df[[x_col, y_col]].values
-    kf = KalmanFilter(transition_matrices=transition_matrix,
-                       observation_matrices=observation_matrix,
-                       initial_state_mean=observations[0],
-                       observation_covariance=np.eye(2),
-                       transition_covariance=np.eye(2) * 0.01)
+    kf = KalmanFilter(transition_matrices= params.get('transition_matrices', transition_matrix),
+                       observation_matrices= params.get('observation_matrices', observation_matrix),
+                       initial_state_mean= params.get('initial_state_mean', df[[x_col, y_col]].values[0]),
+                       observation_covariance= params.get('observation_covariance', np.eye(2) * 0.01),
+                       transition_covariance= params.get('transition_covariance', np.eye(2) * 0.01))
+    kf.em(observations, n_iter=5)
     smoothed_states, _ = kf.smooth(observations)
     return smoothed_states
 
-def track_to_track_fusion(df):
+def track_to_track_fusion(df, mmw_weight, ble_weight):
     fusion_x = []
     fusion_y = []
     for i in range(len(df)):
-        # After improving KF applications, optimize these weights.
-        cov_ble = np.array([[0.5, 0], [0, 0.5]])
-        cov_mmwave = np.array([[0.3, 0], [0, 0.3]])
-
-        w_ble = np.linalg.inv(cov_ble)
-        w_mmwave = np.linalg.inv(cov_mmwave)
-
-        total_weight = w_ble + w_mmwave
-        w_ble /= total_weight
-        w_mmwave /= total_weight
-        
-        fused_x = w_ble[0, 0] * df.loc[i, "X_est_TRIANG_KF"] + w_mmwave[0, 0] * df.loc[i, "X_mmwave_kf"]
-        fused_y = w_ble[1, 1] * df.loc[i, "Y_est_TRIANG_KF"] + w_mmwave[1, 1] * df.loc[i, "Y_mmwave_kf"]
+        # mmwave worsens with distance, so multiply by inverse distance factor between 0.8 and 1
+        mmw_distance_weight = 0.8 + 0.2 / (1 + df.loc[i, 'distance_mmw'])
+        fused_x = mmw_distance_weight * mmw_weight * df.loc[i, "X_mmwave_kf"] + ble_weight * df.loc[i, "X_est_TRIANG_KF"]
+        fused_y = mmw_distance_weight * mmw_weight * df.loc[i, "Y_mmwave_kf"] + ble_weight * df.loc[i, "Y_est_TRIANG_KF"]
         
         fusion_x.append(fused_x)
         fusion_y.append(fused_y)
     
     return fusion_x, fusion_y
+
+def optimize_kalman_filter(df, x_col, y_col, real_xyz_col):
+    param_grid = {
+        'transition_covariance': [np.eye(2) * 0.01, np.eye(2) * 0.1, np.eye(2) * 1],
+        'observation_covariance': [np.eye(2) * 0.01, np.eye(2) * 0.1, np.eye(2) * 1]
+    }
+    best_params = None
+    best_rmse = float('inf')
+
+    for params in ParameterGrid(param_grid):
+        kf = KalmanFilter(
+            transition_matrices=transition_matrix,
+            observation_matrices=observation_matrix,
+            initial_state_mean=df[[x_col, y_col]].values[0],
+            transition_covariance=params['transition_covariance'],
+            observation_covariance=params['observation_covariance']
+        )
+        kf.em(df[[x_col, y_col]].values, n_iter=5)
+        smoothed_states, _ = kf.smooth(df[[x_col, y_col]].values)
+        df['X_kf'], df['Y_kf'] = smoothed_states[:, 0], smoothed_states[:, 1]
+
+        real_xyz = np.array(df[real_xyz_col].values.tolist())
+        kf_xyz = np.array([df['X_kf'], df['Y_kf'], [1.78] * len(df)]).T  # Assuming static z
+
+        rmse = calculate_rmse(real_xyz, kf_xyz)
+        if rmse < best_rmse:
+            best_rmse = rmse
+            best_params = params
+
+    print(f"Best Kalman Filter parameters: {best_params}")
+    return best_params
+
+def optimize_track_to_track_fusion(df):
+    param_grid = {
+        'mmw_weight': [0.1, 0.3, 0.5, 0.7, 0.9],
+        'ble_weight': [0.1, 0.3, 0.5, 0.7, 0.9]
+    }
+    best_weights = None
+    best_rmse = float('inf')
+
+    for params in ParameterGrid(param_grid):
+        fusion_x, fusion_y = track_to_track_fusion(df, params['mmw_weight'], params['ble_weight'])
+        df["X_fused_opt"], df["Y_fused_opt"] = fusion_x, fusion_y
+
+        real_xyz = np.array(df["real_xyz"].values.tolist())
+        fused_xyz = np.array([df["X_fused_opt"], df["Y_fused_opt"], [1.78] * len(df)]).T  # Assuming static z
+
+        rmse = calculate_rmse(real_xyz, fused_xyz)
+        if rmse < best_rmse:
+            best_rmse = rmse
+            best_weights = params
+
+    print(f"Best Track-to-Track Fusion weights: {best_weights}")
+    return best_weights
 
 # --- MAIN PIPELINE EXECUTION ---
 if __name__ == "__main__":
@@ -264,22 +301,22 @@ if __name__ == "__main__":
     print("\nProcessing Centroids...")
     centroid_data = process_centroids(fused_data)
 
-    print("\nApplying Kalman Filter...")
     centroid_data["X_mmw_centroid"] = [x[0] for x in centroid_data["centroid_xyz"].values]
     centroid_data["Y_mmw_centroid"] = [x[1] for x in centroid_data["centroid_xyz"].values]
 
-    ble_kf = apply_kalman_filter(centroid_data, "X_est_TRIANG_KF", "Y_est_TRIANG_KF")
-    mmwave_kf = apply_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid")
-    # Melhoria:
-    # Calcular a aplicação do filtro para ter uma variavel de "peso de kalman" para cada distancia.
-    # segmentar por distancia
-    # aplicar o filtro de kalman para cada distancia
-    # após aplicar a melhoria, otimizar os pesoss do ttf.
-    # ponderar com RSSI
+    print("\nOptimizing Kalman Filter...")
+    best_mmw_params = optimize_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid", "real_xyz")
+
+    print("\nApplying Kalman Filter...")
+    mmwave_kf = apply_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid", best_mmw_params)
 
     centroid_data["X_mmwave_kf"], centroid_data["Y_mmwave_kf"] = mmwave_kf[:, 0], mmwave_kf[:, 1]
 
-    fusion_x, fusion_y = track_to_track_fusion(centroid_data)
+    print("\nOptimizing Track-to-Track Fusion...")
+    best_fusion_weights = optimize_track_to_track_fusion(centroid_data)
+
+    print("\nApplying Track-to-Track Fusion...")
+    fusion_x, fusion_y = track_to_track_fusion(centroid_data, best_fusion_weights['mmw_weight'], best_fusion_weights['ble_weight'])
     centroid_data["X_fused"], centroid_data["Y_fused"] = fusion_x, fusion_y
 
     centroid_data.to_csv("FUSAO_PROCESSADA.csv", sep=';', index=False)

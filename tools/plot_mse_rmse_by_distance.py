@@ -10,9 +10,11 @@ data = pd.read_csv("FUSAO_PROCESSADA.csv", sep=';')
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
 
+# Radar origin
+radar_placement = np.array([0.995, -7.825, 1.70])
+
 def calculate_distance(row):
-    real = np.array(row["real_xyz"])
-    return np.linalg.norm(real)
+    return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)
 
 def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))
@@ -28,8 +30,8 @@ def calculate_errors(group):
 
     rmse_centroid = calculate_rmse(real_points, centroid_points)
     rmse_triang = calculate_rmse(real_points, triang_points)
-    rmse_fusion = calculate_rmse(real_points, fusion_points)
     rmse_mmw_kf = calculate_rmse(real_points, mmw_kf)
+    rmse_fusion = calculate_rmse(real_points, fusion_points)
 
     return pd.Series({
         'MSE_MMW_Centroid': mse_centroid,
@@ -51,15 +53,13 @@ results = data.groupby('distance').apply(calculate_errors).reset_index()
 # Save results to CSV
 results.to_csv("error_by_distance.csv", index=False)
 
-import matplotlib.pyplot as plt
-
 # Plotting MSE by Distance
 plt.figure(figsize=(12, 6))
 methods = ['MMW_Centroid', 'BLE_Triang', 'MMW_KF', 'TTFKF_MMW_BLE_Fusion']
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
-    print(f'MIN MSE_{method}:',np.min(results[f'MSE_{method}']))
-    print(f'MAX MSE_{method}:',np.max(results[f'MSE_{method}']))
+    print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
+    print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
 
 plt.title('Mean Squared Error (MSE) by Distance')
 plt.xlabel('Distance')
