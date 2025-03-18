@@ -1,0 +1,4 @@
+Melhorias:
+- Aplicar KF no BLE utilizando pyKalman ao invés de  pegar do dataset.
+- Utilizar propriedades "a posteriore" (observation_covariance) do KF para ponderar TTF.
+- Verificar se mmw_distance_weight continua eficaz após aplicar ponderação com observation_covariance
