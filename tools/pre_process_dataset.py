@@ -42,7 +42,7 @@ def createTimeToDt(row):
         raise e
 
 def fix_x_axis(row):
-    return [row['X_est_TRIANG_KF'] * -1, row['Y_est_TRIANG_KF'] * -1, row['X_est_FUSAO'] * -1, row['Y_est_FUSAO'] * -1]
+    return [row['X_est_TRIANG_KF'] * -1, row['Y_est_TRIANG_KF'] * -1, row['X_est_FUSAO'] * -1, row['Y_est_FUSAO'] * -1, row['X_est_TRIG'] * -1, row['Y_est_TRIG'] * -1]
 
 
 def fuse_datasets():
@@ -59,7 +59,7 @@ def fuse_datasets():
         ble_data["CreateTime"] = pd.to_datetime(
             ble_data["CreateTime"], format="%Y-%m-%d %H:%M:%S"
         )
-        ble_data[["X_est_TRIANG_KF", "Y_est_TRIANG_KF", "X_est_FUSAO", "Y_est_FUSAO"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
+        ble_data[["X_est_TRIANG_KF", "Y_est_TRIANG_KF", "X_est_FUSAO", "Y_est_FUSAO", "X_est_TRIG", "Y_est_TRIG"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
 
         fusion_data = pd.merge(
             ble_data, mmwave_data, left_on="CreateTime", right_on="timestamp", how="inner"
@@ -76,6 +76,7 @@ def fuse_datasets():
         all_fused_data.append(fusion_data)
 
     final_fused_dataset = pd.concat(all_fused_data, ignore_index=True)
+    final_fused_dataset['ble_xyz'] = final_fused_dataset.apply(lambda row: (row["X_est_TRIG"], row["Y_est_TRIG"], 1.78), axis=1)
     final_fused_dataset.to_csv(FINAL_MERGED_FILENAME, index=False)
     print(f"Final merged dataset saved as {FINAL_MERGED_FILENAME}")
     return final_fused_dataset

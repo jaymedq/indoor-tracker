@@ -4,11 +4,12 @@ import matplotlib.pyplot as plt
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mse
 
 # Load dataset
-data = pd.read_csv("FUSAO_PROCESSADA.csv", sep=';')
+data = pd.read_csv("fused_dataset.csv", sep=';')
 
 # Ensure stringified lists are parsed correctly
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
+data["sensor_fused_xyz"] = data["sensor_fused_xyz"].apply(eval)
 
 # Radar origin
 radar_placement = np.array([0.995, -7.825, 1.70])
@@ -21,7 +22,7 @@ def calculate_errors(group):
     centroid_points = np.vstack(group['centroid_xyz'].apply(np.array))
     triang_points = np.column_stack((group['X_est_TRIANG_KF'], group['Y_est_TRIANG_KF'], np.full(len(group), 1.78)))
     mmw_kf = np.column_stack((group['X_mmwave_kf'], group['Y_mmwave_kf'], np.full(len(group), 1.78)))
-    fusion_points = np.column_stack((group['X_fused'], group['Y_fused'], np.full(len(group), 1.78)))
+    fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
 
     mse_centroid = calculate_mse(real_points, centroid_points)
     mse_triang = calculate_mse(real_points, triang_points)
