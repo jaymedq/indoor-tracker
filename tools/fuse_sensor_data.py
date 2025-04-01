@@ -1,90 +1,99 @@
 import numpy as np
 import pandas as pd
-import ast
 
-class KalmanFilter:
-    def __init__(self, dt, initial_state, initial_covariance, process_noise, measurement_noise):
-        """
-        Initializes the Kalman filter for a constant velocity model.
+class KalmanFilter2D:
+    def __init__(self):
+        # State vector [x, y, vx, vy]
+        self.x = np.array([0, 0, 0, 0], dtype=float)
         
-        Parameters:
-          dt: Time step
-          initial_state: (6,1) vector [x, y, z, vx, vy, vz]^T
-          initial_covariance: (6,6) initial state covariance matrix
-          process_noise: (6,6) process noise covariance matrix
-          measurement_noise: (3,3) measurement noise covariance matrix (for the position measurements)
-        """
-        self.dt = dt
-        self.x = initial_state  # state vector: [x, y, z, vx, vy, vz]^T
-        self.P = initial_covariance  # state covariance matrix
+        # State transition matrix (Assuming constant velocity model)
+        self.dt = 1  # Time step
+        self.F = np.array([
+            [1, 0, self.dt, 0],  # x' = x + vx*dt
+            [0, 1, 0, self.dt],  # y' = y + vy*dt
+            [0, 0, 1, 0],  # vx' = vx
+            [0, 0, 0, 1]   # vy' = vy
+        ], dtype=float)
         
-        # State transition matrix (constant velocity model)
-        self.F = np.block([[np.eye(3), dt * np.eye(3)],
-                           [np.zeros((3, 3)), np.eye(3)]])
+        # Process noise covariance (assumed small)
+        self.Q = np.eye(4) * 0.01
         
-        # Measurement matrix: we only measure position
-        self.H = np.hstack([np.eye(3), np.zeros((3, 3))])
-        
-        self.Q = process_noise  # process noise covariance matrix
-        self.R = measurement_noise  # measurement noise covariance matrix
-    
+        # Measurement matrix (Only x and y)
+        self.H = np.array([
+            [1, 0, 0, 0],  # Measure x
+            [0, 1, 0, 0]   # Measure y
+        ], dtype=float)
+
+        # Measurement noise covariance (Will be updated dynamically)
+        self.R = np.eye(2)  
+
+        # Initial covariance matrix (High uncertainty in velocity)
+        self.P = np.eye(4) * 10
+
     def predict(self):
-        """Performs the prediction step of the Kalman filter."""
-        self.x = self.F @ self.x
-        self.P = self.F @ self.P @ self.F.T + self.Q
+        self.x = np.dot(self.F, self.x)  # State prediction
+        self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q  # Covariance prediction
+
+    def update(self, measurement, R):
+        """
+        measurement: [x, y]
+        R: 2x2 covariance matrix for measurement
+        """
+        self.R = R  # Update measurement noise
+        z = np.array(measurement)
+
+        # Innovation
+        y = z - np.dot(self.H, self.x)
+
+        # Innovation covariance
+        S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
+        K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))  # Kalman Gain
+
+        # State update
+        self.x = self.x + np.dot(K, y)
+
+        # Covariance update
+        I = np.eye(4)
+        self.P = np.dot((I - np.dot(K, self.H)), self.P)
+
+    def get_state(self):
+        return self.x[:2]  # Return only (x, y)
+
+    def get_covariance(self):
+        return self.P[:2, :2]  # Return only 2x2 covariance
+
+def track_to_track_fusion(mean1, cov1, mean2, cov2):
+    """
+    Fuse two position estimates with covariance weighting.
     
-    def update(self, z):
-        """
-        Performs the measurement update step.
-        
-        Parameters:
-          z: Measurement vector (3-element list or array)
-          
-        Returns:
-          position: Updated position estimate (first 3 elements of state)
-          position_cov: (3,3) covariance of the position estimate
-        """
-        z = np.array(z).reshape(3, 1)
-        y = z - self.H @ self.x  # innovation or measurement residual
-        S = self.H @ self.P @ self.H.T + self.R  # innovation covariance
-        K = self.P @ self.H.T @ np.linalg.inv(S)  # Kalman gain
-        self.x = self.x + K @ y
-        self.P = (np.eye(self.P.shape[0]) - K @ self.H) @ self.P
-        
-        # Extract the position and its covariance (upper-left 3x3 block)
-        position = self.x[:3].flatten()
-        position_cov = self.P[:3, :3]
-        return position, position_cov
+    mean1, mean2: 2D position estimates (x, y)
+    cov1, cov2: 2x2 covariance matrices
+    """
+    cov_inv1 = np.linalg.inv(cov1)
+    cov_inv2 = np.linalg.inv(cov2)
 
-# --- Kalman Filter Setup ---
+    # Combined covariance
+    fused_cov = np.linalg.inv(cov_inv1 + cov_inv2)
 
-# Define the time step (modify as needed)
-dt = 1.0
+    # Weighted sum of means
+    fused_mean = np.dot(fused_cov, np.dot(cov_inv1, mean1) + np.dot(cov_inv2, mean2))
 
-# Initial state: assume starting at zero position and velocity.
-initial_state = np.zeros((6, 1))
+    return fused_mean, fused_cov
 
-# Initial covariance: set high uncertainty initially.
-initial_covariance = np.eye(6) * 10.0
 
-# Process noise covariance (tuning parameter)
-q = 0.1  # process noise level
-Q = np.block([
-    [np.eye(3) * q, np.zeros((3, 3))],
-    [np.zeros((3, 3)), np.eye(3) * q]
-])
+kf_mmwave = KalmanFilter2D()
+kf_ble = KalmanFilter2D()
 
-# Measurement noise covariance for each sensor:
-# mmWave is assumed to be more accurate than BLE.
-R_mm = np.diag([0.1, 0.1, 0.1])  # mmWave sensor measurement noise
-R_ble = np.diag([0.5, 0.5, 0.5])  # BLE sensor measurement noise
+# Example measurement noise covariance for each sensor
+R_mmwave = np.array([[0.01, 0], [0, 0.01]])  # More precise
+R_ble = np.array([[0.2, 0], [0, 0.2]])  # Less precise
 
-# Create Kalman filter instances for each sensor
-kf_mm = KalmanFilter(dt, initial_state.copy(), initial_covariance.copy(), Q, R_mm)
-kf_ble = KalmanFilter(dt, initial_state.copy(), initial_covariance.copy(), Q, R_ble)
-
-# --- Read the Dataset ---
 df = pd.read_csv("FUSAO_PROCESSADA.csv", sep=";")
+# Drop np.isnan values
+df = df[~np.isnan(df[["X_est_TRIG"]]).any(axis=1)]
+df = df.reset_index(drop=True)
+df["centroid_xyz"] = df["centroid_xyz"].apply(eval)
+df["ble_xyz"] = df["ble_xyz"].apply(eval)
 
 fused_values = []
 
@@ -92,35 +101,39 @@ fused_values = []
 for idx, row in df.iterrows():
     try:
         # Parse the string representations of the measurements
-        mm_meas = ast.literal_eval(row["centroid_xyz"])
-        ble_meas = ast.literal_eval(row["ble_xyz"])
+        mm_meas = row["centroid_xyz"]
+        ble_meas = row["ble_xyz"]
+        if np.nan in mm_meas or np.nan in ble_meas:
+            raise ValueError("Invalid measurements")
     except Exception as e:
         print(f"Error parsing row {idx}: {e}")
         mm_meas = [0.0, 0.0, 0.0]
         ble_meas = [0.0, 0.0, 0.0]
-    
-    # --- Kalman Filter Prediction Step ---
-    kf_mm.predict()
+
+    # Run Kalman filters
+    kf_mmwave.predict()
+    kf_mmwave.update(mm_meas[:2], R_mmwave)
+
     kf_ble.predict()
+    kf_ble.update(ble_meas[:2], R_ble)
+
+    # Get estimates and covariances
+    mean_mmwave = kf_mmwave.get_state()
+    cov_mmwave = kf_mmwave.get_covariance()
+
+    mean_ble = kf_ble.get_state()
+    cov_ble = kf_ble.get_covariance()
+
+    # Fuse estimates
+    fused_position, fused_covariance = track_to_track_fusion(mean_mmwave, cov_mmwave, mean_ble, cov_ble)
+    fused_position = fused_position.tolist()
+    fused_position.append(1.78)  # Add Z coordinate
     
-    # --- Kalman Filter Update Step ---
-    state_mm, cov_mm = kf_mm.update(mm_meas)
-    state_ble, cov_ble = kf_ble.update(ble_meas)
-    
-    # --- Track-to-Track Fusion ---
-    # Use the updated position covariances from the Kalman filters.
-    try: 
-        inv_cov_mm = np.linalg.inv(cov_mm)
-        inv_cov_ble = np.linalg.inv(cov_ble)
-        fused_cov_inv = inv_cov_mm + inv_cov_ble
-        fused_cov = np.linalg.inv(fused_cov_inv)
-        fused_state = fused_cov.dot(inv_cov_mm.dot(np.array(state_mm)) + inv_cov_ble.dot(np.array(state_ble)))
-        fused_state = fused_state.flatten().tolist()
-    except np.linalg.LinAlgError as e:
-        print(f"Error inverting covariance matrices at row {idx}: {e}")
-        fused_state = [0.0, 0.0, 0.0]
-    
-    fused_values.append(fused_state)
+
+    print("Fused Position:", fused_position)
+    print("Fused Covariance:\n", fused_covariance)
+
+    fused_values.append(fused_position)
 
 # Append the fused data to the dataframe.
 df["sensor_fused_xyz"] = fused_values
