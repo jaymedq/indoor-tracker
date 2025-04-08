@@ -94,11 +94,12 @@ df = df[~np.isnan(df[["X_est_TRIG"]]).any(axis=1)]
 df = df.reset_index(drop=True)
 df["centroid_xyz"] = df["centroid_xyz"].apply(eval)
 df["ble_xyz"] = df["ble_xyz"].apply(eval)
+df["real_xyz"] = df["real_xyz"].apply(eval)
 
 fused_values = []
 
 # Process each row (assumed to be sequential in time)
-for idx, row in df.iterrows():
+def fuse_sensor_data(row):
     try:
         # Parse the string representations of the measurements
         mm_meas = row["centroid_xyz"]
@@ -106,7 +107,7 @@ for idx, row in df.iterrows():
         if np.nan in mm_meas or np.nan in ble_meas:
             raise ValueError("Invalid measurements")
     except Exception as e:
-        print(f"Error parsing row {idx}: {e}")
+        # print(f"Error parsing row {idx}: {e}")
         mm_meas = [0.0, 0.0, 0.0]
         ble_meas = [0.0, 0.0, 0.0]
 
@@ -133,11 +134,42 @@ for idx, row in df.iterrows():
     print("Fused Position:", fused_position)
     print("Fused Covariance:\n", fused_covariance)
 
-    fused_values.append(fused_position)
+    return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[0][1]
 
 # Append the fused data to the dataframe.
-df["sensor_fused_xyz"] = fused_values
+df[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy"]] = df.apply(fuse_sensor_data, axis=1, result_type='expand')
 
 # Save the updated dataframe to a new CSV file.
 df.to_csv("fused_dataset.csv", sep=';', index=False)
 print("Fused dataset saved to 'fused_dataset.csv'")
+
+# plotting fusion_kf_cov_matrix by distance
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Radar origin
+radar_placement = np.array([0.995, -7.825, 1.70])
+def calculate_distance(row):
+    return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)
+# Calculate distances
+df['distance'] = df.apply(calculate_distance, axis=1)
+df['distance_bin'] = pd.cut(df['distance'], bins=np.arange(0, df['distance'].max()+0.5, 0.5))
+
+
+heatmap_data = df.groupby('distance_bin')[["cov_xx", "cov_xy", "cov_yx", "cov_yy"]].mean()
+heatmap_data.index = heatmap_data.index.astype(str)
+
+# Group by discrete distance and calculate errors
+def plot_covariance_by_distance(df):
+    plt.plot(df['distance'], df["cov_xx"], marker='o', label='cov_xx', alpha=0.5)
+    plt.plot(df['distance'], df["cov_xy"], marker='*', label='cov_xy', alpha=0.5)
+    plt.plot(df['distance'], df["cov_yx"], marker='p', label='cov_yx', alpha=0.5)
+    plt.plot(df['distance'], df["cov_yy"], marker='h', label='cov_yy', alpha=0.5)
+    plt.plot()
+    plt.title("Kalman Filter Covariance Over Time")
+    plt.xlabel("Distance")
+    plt.ylabel("Covariance Component")
+    plt.legend()
+    plt.show()
+
+plot_covariance_by_distance(df)
