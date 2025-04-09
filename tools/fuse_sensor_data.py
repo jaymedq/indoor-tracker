@@ -6,7 +6,7 @@ class KalmanFilter2D:
         # State vector [x, y]
         self.x = np.array([0, 0], dtype=float)
         
-        # State transition matrix (Assuming constant velocity model)
+        # State transition matrix (Assuming static model)
         self.dt = 1  # Time step
         self.F = np.eye(2)
         
@@ -19,7 +19,7 @@ class KalmanFilter2D:
         # Measurement noise covariance (Will be updated dynamically)
         self.R = np.eye(2)
 
-        # Initial covariance matrix (High uncertainty in velocity)
+        # Initial covariance matrix (High uncertainty initially)
         self.P = np.eye(2) * 1.0
 
     def predict(self):
