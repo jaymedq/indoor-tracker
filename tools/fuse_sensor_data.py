@@ -26,16 +26,18 @@ class KalmanFilter2D:
         self.x = np.dot(self.F, self.x)  # State prediction
         self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q  # Covariance prediction
 
-    def update(self, measurement, R):
+    def update(self, measurement):
         """
         measurement: [x, y]
         R: 2x2 covariance matrix for measurement
         """
-        self.R = R  # Update measurement noise
         z = np.array(measurement)
 
         # Innovation
         y = z - np.dot(self.H, self.x)
+
+        # Calculate measurement noise covariance using the covariance of the measurement noise
+        self.R = np.eye(2)*np.mean(np.dot(y, y.T))
 
         # Innovation covariance
         S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
@@ -96,10 +98,10 @@ def fuse_sensor_data(row, kf_mmwave, kf_ble, R_mmwave, R_ble):
 
     # Run Kalman filters
     kf_mmwave.predict()
-    kf_mmwave.update(mm_meas[:2], R_mmwave)
+    kf_mmwave.update(mm_meas[:2])
 
     kf_ble.predict()
-    kf_ble.update(ble_meas[:2], R_ble)
+    kf_ble.update(ble_meas[:2])
 
     # Get estimates and covariances
     mean_mmwave = kf_mmwave.get_state()
@@ -117,7 +119,7 @@ def fuse_sensor_data(row, kf_mmwave, kf_ble, R_mmwave, R_ble):
     print("Fused Position:", fused_position)
     print("Fused Covariance:\n", fused_covariance)
 
-    return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[0][1]
+    return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[1][1]
 
 # Radar origin
 radar_placement = np.array([0.995, -7.825, 1.70])
