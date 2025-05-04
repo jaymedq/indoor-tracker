@@ -1,0 +1,7 @@
+Calcular divergência
+
+F seria a distancia obtida pela fusão
+B seria a distancia obtida pelo BLE
+M seria a distancia obtida pelo mmW
+
+Adicionar "fusão não compensa sensores ruins" e para endereçar pode-se utilizar divergência KL talvez.

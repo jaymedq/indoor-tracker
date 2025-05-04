@@ -1,0 +1,4 @@
+Sugestões:
+- Adicionar gausian noise ao mmWave e verificar a eficacia do filtro.
+- Sintetizar o dataset BLE com medidas atuais aleatorizando as medidas pros timestamps do mmwave. 
+- Guardar as matrizes do kalman por linha do dataset pra usar no TTF depois.
