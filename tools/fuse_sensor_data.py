@@ -37,7 +37,7 @@ class KalmanFilter2D:
         y = z - np.dot(self.H, self.x)
 
         # Calculate measurement noise covariance using the covariance of the measurement noise
-        self.R = np.eye(2)*np.mean(np.dot(y, y.T))
+        self.R = np.eye(2) * np.array([0.01, 0.01])  # Example covariance for the measurement
 
         # Innovation covariance
         S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
@@ -125,8 +125,10 @@ def fuse_sensor_data(row, kf_mmwave, kf_ble, R_mmwave, R_ble):
 radar_placement = np.array([0.995, -7.825, 1.70])
 def calculate_distance(row):
     return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)
+
 # Append the fused data to the dataframe.
 df['distance'] = df.apply(calculate_distance, axis=1)
+
 grouped_dict = {key: group for key, group in df.groupby("distance")}
 for key, group in grouped_dict.items():
     kf_mmwave = KalmanFilter2D()
@@ -170,3 +172,6 @@ def plot_covariance_by_distance(df, arg1):
 
 plot_covariance_by_distance(df, 'timestamp')
 plot_covariance_by_distance(df, 'distance')
+
+# Calculate the kullback-leibler divergence between the BLE, mmwave and fused data
+# Step 1: plot histograms of the sensors and fused 3d centroids data.
