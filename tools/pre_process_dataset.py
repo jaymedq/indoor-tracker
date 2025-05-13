@@ -68,7 +68,7 @@ def fuse_datasets():
         for point in EXPERIMENT_POINTS.keys():
             if f"_{point}_" in ble_file:
                 fusion_data["real_xyz"] = [EXPERIMENT_POINTS[point]] * len(fusion_data)
-                fusion_data["distance_mmw"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - radar_placement)
+                fusion_data["distance"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - radar_placement)
 
         BLE_MMWAVE_FUSION_FILENAME = f"{ble_file}_mmwave_fusion.csv"
         fusion_data.to_csv(BLE_MMWAVE_FUSION_FILENAME, index=False)
@@ -231,7 +231,7 @@ def track_to_track_fusion(df, mmw_weight, ble_weight):
     fusion_y = []
     for i in range(len(df)):
         # mmwave worsens with distance, so multiply by inverse distance factor between 0.8 and 1
-        mmw_distance_weight = 0.8 + 0.2 / (1 + df.loc[i, 'distance_mmw'])
+        mmw_distance_weight = 0.8 + 0.2 / (1 + df.loc[i, 'distance'])
         fused_x = mmw_distance_weight * mmw_weight * df.loc[i, "X_mmwave_kf"] + ble_weight * df.loc[i, "X_est_TRIANG_KF"]
         fused_y = mmw_distance_weight * mmw_weight * df.loc[i, "Y_mmwave_kf"] + ble_weight * df.loc[i, "Y_est_TRIANG_KF"]
         
