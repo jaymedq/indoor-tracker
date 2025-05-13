@@ -11,15 +11,6 @@ df['ble_xyz'] = df['ble_xyz'].apply(eval)
 df['centroid_xyz'] = df['centroid_xyz'].apply(eval)
 df['real_xyz'] = df['real_xyz'].apply(eval)
 
-# Step 1: Extract 2D positions
-fused_xy = np.array(df['sensor_fused_xyz'].tolist())[:, :2]
-ble_xy = np.array(df['ble_xyz'].tolist())[:, :2]
-mmwave_xy = np.array(df['centroid_xyz'].tolist())[:, :2]
-
-# step 1.5: extract distances
-fused_dist = df['distance']
-ble_dist = df['distance']
-mmwave_dist = df['distance']
 
 # Calculate offsets
 def calculate_offset_mmw(row):
