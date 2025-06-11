@@ -66,7 +66,8 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
     else
     {
         // Open the file in append mode
-        std::ofstream file(filePath, std::ios::app);
+        std::ofstream file;
+        file.open(filePath, std::ios::app);
         if (!file.is_open()) {
             std::cerr << "Failed to open the file: " << filePath << std::endl;
             return;
@@ -99,6 +100,14 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
         file << "\"[";
         for (size_t i = 0; i < pointCloud.size(); ++i) {
             file << pointCloud[i].z;
+            if (i < pointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < pointCloud.size(); ++i) {
+            file << pointCloud[i].velocity;
             if (i < pointCloud.size() - 1) {
                 file << ", ";
             }

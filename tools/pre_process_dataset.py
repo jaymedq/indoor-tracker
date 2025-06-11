@@ -8,13 +8,9 @@ from sklearn.model_selection import ParameterGrid
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
 BLE_DATASET_FILES = [
-    "resultado_RADAR_C3_PRD_P12_178_JM",
-    "resultado_RADAR_C3_PRD_P13_178_JM",
-    "resultado_RADAR_C3_PRD_P14_178_JM",
-    "resultado_RADAR_C3_PRD_P15_178_JM",
-    "resultado_RADAR_C3_PRD_PA_178_JM",
+    "exported_PA_JQ_04_06",
 ]
-MMWAVE_DATASET_FILE = "output_lab_tag_14_10_24"
+MMWAVE_DATASET_FILE = "output_04-06-2025_20_32_40"
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
 
@@ -35,14 +31,14 @@ radar_placement = np.array([0.995, -7.825, 1.70])
 # --- STEP 1: SENSOR FUSION ---
 def createTimeToDt(row):
     try:
-        epoch_in_seconds = row["CreateTime"]
+        epoch_in_seconds = row["create_time"]
         return datetime.fromtimestamp(epoch_in_seconds).strftime("%Y-%m-%d %H:%M:%S")
     except Exception as e:
         print(row)
         raise e
 
 def fix_x_axis(row):
-    return [row['X_est_TRIANG_KF'] * -1, row['Y_est_TRIANG_KF'] * -1, row['X_est_FUSAO'] * -1, row['Y_est_FUSAO'] * -1, row['X_est_TRIG'] * -1, row['Y_est_TRIG'] * -1]
+    return [row['x_ble'] * -1, row['y_ble'] * -1]
 
 
 def fuse_datasets():
@@ -54,15 +50,17 @@ def fuse_datasets():
 
     for ble_file in BLE_DATASET_FILES:
         ble_data = pd.read_csv(f"Results/lab-experiment-results/{ble_file}.csv")
-        ble_data["CreateTime"] = ble_data.apply(createTimeToDt, axis=1)
+        ble_data["create_time"] = ble_data.apply(createTimeToDt, axis=1)
 
-        ble_data["CreateTime"] = pd.to_datetime(
-            ble_data["CreateTime"], format="%Y-%m-%d %H:%M:%S"
+        ble_data["create_time"] = pd.to_datetime(
+            ble_data["create_time"], format="%Y-%m-%d %H:%M:%S"
         )
-        ble_data[["X_est_TRIANG_KF", "Y_est_TRIANG_KF", "X_est_FUSAO", "Y_est_FUSAO", "X_est_TRIG", "Y_est_TRIG"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
+        # rename x,y,z columns to x_ble, y_ble, z_ble
+        ble_data.rename(columns={"x": "x_ble", "y": "y_ble", "z": "z_ble"}, inplace=True)
+        ble_data[["x_ble", "y_ble"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
 
         fusion_data = pd.merge(
-            ble_data, mmwave_data, left_on="CreateTime", right_on="timestamp", how="inner"
+            ble_data, mmwave_data, left_on="create_time", right_on="timestamp", how="inner"
         )
 
         for point in EXPERIMENT_POINTS.keys():
@@ -76,7 +74,7 @@ def fuse_datasets():
         all_fused_data.append(fusion_data)
 
     final_fused_dataset = pd.concat(all_fused_data, ignore_index=True)
-    final_fused_dataset['ble_xyz'] = final_fused_dataset.apply(lambda row: (row["X_est_TRIG"], row["Y_est_TRIG"], 1.78), axis=1)
+    final_fused_dataset['ble_xyz'] = final_fused_dataset.apply(lambda row: (row["x_ble"], row["y_ble"], 1.78), axis=1)
     final_fused_dataset.to_csv(FINAL_MERGED_FILENAME, index=False)
     print(f"Final merged dataset saved as {FINAL_MERGED_FILENAME}")
     return final_fused_dataset
@@ -148,8 +146,8 @@ def evaluate_metrics(data):
     real_z = [x[2] for x in data["real_xyz"].values]
     real_3d = np.array([real_x, real_y, real_z])
 
-    triang_kf_x = data["X_est_TRIANG_KF"].values
-    triang_kf_y = data["Y_est_TRIANG_KF"].values
+    triang_kf_x = data["x_ble"].values
+    triang_kf_y = data["y_ble"].values
     triang_kf_z = 1.78  # Static z for estimation
 
     centroid_x = [x[0] for x in data["centroid_xyz"].values]
@@ -157,8 +155,8 @@ def evaluate_metrics(data):
     centroid_z = [x[2] for x in data["centroid_xyz"].values]
 
     # Convert to numpy arrays
-    fusao_x = data["X_est_FUSAO"].values
-    fusao_y = data["Y_est_FUSAO"].values
+    fusao_x = data["x_ble"].values
+    fusao_y = data["y_ble"].values
     fusao_z = 1.78  # Static z for estimation
     real_z = [x[2] for x in data["real_xyz"].values]
     triang_kf_3d = np.array([triang_kf_x, triang_kf_y, [triang_kf_z] * len(real_z)])
@@ -232,8 +230,8 @@ def track_to_track_fusion(df, mmw_weight, ble_weight):
     for i in range(len(df)):
         # mmwave worsens with distance, so multiply by inverse distance factor between 0.8 and 1
         mmw_distance_weight = 0.8 + 0.2 / (1 + df.loc[i, 'distance'])
-        fused_x = mmw_distance_weight * mmw_weight * df.loc[i, "X_mmwave_kf"] + ble_weight * df.loc[i, "X_est_TRIANG_KF"]
-        fused_y = mmw_distance_weight * mmw_weight * df.loc[i, "Y_mmwave_kf"] + ble_weight * df.loc[i, "Y_est_TRIANG_KF"]
+        fused_x = mmw_distance_weight * mmw_weight * df.loc[i, "X_mmwave_kf"] + ble_weight * df.loc[i, "x_ble"]
+        fused_y = mmw_distance_weight * mmw_weight * df.loc[i, "Y_mmwave_kf"] + ble_weight * df.loc[i, "y_ble"]
         
         fusion_x.append(fused_x)
         fusion_y.append(fused_y)

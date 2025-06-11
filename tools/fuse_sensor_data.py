@@ -76,7 +76,7 @@ def track_to_track_fusion(mean1, cov1, mean2, cov2):
 
 df = pd.read_csv("FUSAO_PROCESSADA.csv", sep=";")
 # Drop np.isnan values
-df: pd.DataFrame = df[~np.isnan(df[["X_est_TRIG"]]).any(axis=1)]
+df: pd.DataFrame = df[~np.isnan(df[["x_ble"]]).any(axis=1)]
 df = df.reset_index(drop=True)
 df["centroid_xyz"] = df["centroid_xyz"].apply(eval)
 df["ble_xyz"] = df["ble_xyz"].apply(eval)
@@ -172,6 +172,3 @@ def plot_covariance_by_distance(df, arg1):
 
 plot_covariance_by_distance(df, 'timestamp')
 plot_covariance_by_distance(df, 'distance')
-
-# Calculate the kullback-leibler divergence between the BLE, mmwave and fused data
-# Step 1: plot histograms of the sensors and fused 3d centroids data.

@@ -8,6 +8,8 @@
 #include <iomanip>
 #include <chrono>
 #include <unistd.h>
+#include <chrono>
+#include <algorithm>
 #include "../third-party/include/serial/serial.h"
 #include "parser.hpp"
 
@@ -46,7 +48,7 @@ public:
         return byteBuffer;
     }
 
-    void run()
+    void run(const std::string &filename)
     {
         while (true)
         {
@@ -61,7 +63,7 @@ public:
                 }
                 else
                 {
-                    frame->toCsv("output.csv");
+                    frame->toCsv(filename);
                 }
             }
             sleep(REFRESH_TIME); // Sleep for REFRESH_TIME microseconds
@@ -73,11 +75,26 @@ private:
     serial::Serial dataPort;
 };
 
+std::string getfileName()
+{
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    std::tm *local_time = std::localtime(&now_time);
+
+    std::ostringstream timeStream;
+    timeStream << std::put_time(local_time, "%d-%m-%Y %H:%M:%S");
+    std::string fileName = "output_" + timeStream.str() + ".csv";
+    // Replace spaces and colons with underscores for file name compatibility
+    std::replace(fileName.begin(), fileName.end(), ' ', '_');
+    std::replace(fileName.begin(), fileName.end(), ':', '_');
+    return fileName;
+}
+
 int main(int argc, char *argv[])
 {
     // Check if the correct number of arguments is provided
-    std::string cliPortName = "COM8";
-    std::string dataPortName = "COM7";
+    std::string cliPortName = "COM4";
+    std::string dataPortName = "COM3";
     if (argc != 3)
     {
         std::cerr << "Usage: " << argv[0] << " <CLI_COM_PORT> <DATA_COM_PORT>" << std::endl;
@@ -88,12 +105,22 @@ int main(int argc, char *argv[])
         std::string dataPortName = argv[2];
     }
 
-
+    std::string filename = getfileName();
+    std::ofstream file(filename, std::ios::app);
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open the file: " << filename << std::endl;
+        return 1;
+    }
+    std::cout << "Writing to file: " << filename << std::endl;
+    // write header to the file numObj,x,y,z,velocity,timestamp
+    file << "numObj,x,y,z,velocity,timestamp\n";
+    file.close();
     try
     {
         IWRAPP app(cliPortName, dataPortName);
         app.configureSensor(CONFIG_FILE_NAME);
-        app.run();
+        app.run(filename);
     }
     catch (const std::exception &e)
     {

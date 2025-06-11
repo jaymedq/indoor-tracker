@@ -20,7 +20,7 @@ def calculate_distance(row):
 def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))
     centroid_points = np.vstack(group['centroid_xyz'].apply(np.array))
-    triang_points = np.column_stack((group['X_est_TRIANG_KF'], group['Y_est_TRIANG_KF'], np.full(len(group), 1.78)))
+    triang_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
     mmw_kf = np.column_stack((group['X_mmwave_kf'], group['Y_mmwave_kf'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
 
