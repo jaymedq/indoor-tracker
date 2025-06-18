@@ -92,30 +92,55 @@ std::string getfileName()
 
 int main(int argc, char *argv[])
 {
-    // Check if the correct number of arguments is provided
     std::string cliPortName = "COM4";
     std::string dataPortName = "COM3";
-    if (argc != 3)
+    std::string filename = "";
+
+    // Parse command line arguments
+    for (int i = 1; i < argc; ++i)
     {
-        std::cerr << "Usage: " << argv[0] << " <CLI_COM_PORT> <DATA_COM_PORT>" << std::endl;
-    }
-    else
-    {
-        std::string cliPortName = argv[1];
-        std::string dataPortName = argv[2];
+        std::string arg = argv[i];
+        if (arg == "-o" && i + 1 < argc)
+        {
+            filename = argv[++i];
+        }
+        else if (cliPortName.empty())
+        {
+            cliPortName = arg;
+        }
+        else if (dataPortName.empty())
+        {
+            dataPortName = arg;
+        }
+        else
+        {
+            std::cerr << "Unexpected argument: " << arg << std::endl;
+            return 1;
+        }
     }
 
-    std::string filename = getfileName();
+    if (cliPortName.empty() || dataPortName.empty())
+    {
+        std::cerr << "Usage: " << argv[0] << " <CLI_COM_PORT> <DATA_COM_PORT> [-o output.csv]" << std::endl;
+        return 1;
+    }
+
+    if (filename.empty())
+    {
+        filename = getfileName();
+    }
+
     std::ofstream file(filename, std::ios::app);
     if (!file.is_open())
     {
         std::cerr << "Failed to open the file: " << filename << std::endl;
         return 1;
     }
+
     std::cout << "Writing to file: " << filename << std::endl;
-    // write header to the file numObj,x,y,z,velocity,timestamp
     file << "numObj,x,y,z,velocity,timestamp\n";
     file.close();
+
     try
     {
         IWRAPP app(cliPortName, dataPortName);
@@ -125,6 +150,7 @@ int main(int argc, char *argv[])
     catch (const std::exception &e)
     {
         std::cerr << "Exception: " << e.what() << std::endl;
+        return 1;
     }
 
     return 0;

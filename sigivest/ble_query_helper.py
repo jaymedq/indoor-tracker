@@ -28,6 +28,27 @@ def automap_classes(metadata):
     Base.prepare()
     return Base
 
+def start_test(session, test_name, test_description):
+    session.execute(text("""
+        DELETE FROM sigivest.test_annotations
+        WHERE test_name = :test_name
+    """), {'test_name': test_name})
+    result = session.execute(text("""
+        INSERT INTO sigivest.test_annotations (test_name, description)
+        VALUES (:test_name, :description)
+        RETURNING *;
+    """), {'test_name': test_name, 'description': test_description})
+    session.commit()
+    return result.fetchone()
+
+def end_test(session, test_name):
+    session.execute(text("""
+        UPDATE sigivest.test_annotations
+        SET end_time = CURRENT_TIMESTAMP
+        WHERE test_name = :test_name;
+    """), {'test_name': test_name})
+    session.commit()
+
 def fetch_beacon_data(session, Base, test_name):
     B = Base.classes.beacons
     A = Base.classes.arrivals
