@@ -136,7 +136,6 @@ uint32_t AreaScannerFrame::getUint32(const std::vector<uint8_t> &data, int offse
 void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uint32_t length) {
     switch (type) {
         case MMWDEMO_OUTPUT_MSG_DETECTED_POINTS:
-        case MMWDEMO_OUTPUT_MSG_STATIC_DETECTED_POINTS:
         {
             if (length % sizeof(DPIF_PointCloudCartesian_t) != 0) {
                 std::cerr << "Payload size mismatch for detected points. Length: " << length 
