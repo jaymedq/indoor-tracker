@@ -7,25 +7,55 @@ from sklearn.model_selection import ParameterGrid
 
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
-BLE_DATASET_FILES = [
-    "exported_PA_JQ_04_06",
+BLE_DATASETS_PREFIX = "exported_"
+MMW_DATASETS_SUFFIX = "_mmwave_data"
+TEST_NAMES = [
+    # "T002_MMW_PA_BLE_C3P1",
+    # "T003_MMW_PA_BLE_C3P2",
+    # "T004_MMW_PA_BLE_C3P3",
+    # "T005_MMW_PA_BLE_C3P4",
+    # "T006_MMW_PA_BLE_C3P5",
+    # "T007_MMW_PA_BLE_C3P6"
+    # "T008_MMW_PA_BLE_PORTA",
+    "T009_MMW_PA_BLE_C4P6",
+    "T010_MMW_PA_BLE_C4P3",
+    "T010_MMW_PA_BLE_C4P5",
+    "T011_MMW_PA_BLE_C4P4",
+    "T013_MMW_PA_BLE_C4P2",
+    "T014_MMW_PA_BLE_C4P1",
 ]
-MMWAVE_DATASET_FILE = "output_04-06-2025_20_32_40"
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
 
 # Experiment points
 EXPERIMENT_POINTS = {
-    "PA": [7.1, -6.865, 1.78],
-    "P11": [1.102, -6.865, 1.78],
-    "P12": [2.308, -6.865, 1.78],
-    "P13": [3.503, -6.865, 1.78],
-    "P14": [4.7, -6.865, 1.78],
-    "P15": [5.9, -6.865, 1.78],
+    "C1P1": [ 1.15 , -0.4, 1.78],
+    "C1P2": [ 2.35 , -0.4, 1.78],
+    "C1P3": [ 3.55 , -0.4, 1.78],
+    "C1P4": [ 4.75 , -0.4, 1.78],
+    "C1P5": [ 5.95 , -0.4, 1.78],
+    "C2P1": [ 1.143, -4.462, 1.78],
+    "C2P2": [ 2.343, -4.462, 1.78],
+    "C2P3": [ 3.543, -4.462, 1.78],
+    "C2P4": [ 4.745, -4.462, 1.78],
+    "C2P5": [ 5.944, -4.462, 1.78],
+    "C3P1": [ 1.102, -6.865, 1.78],
+    "C3P2": [ 2.308, -6.865, 1.78],
+    "C3P3": [ 3.503, -6.865, 1.78],
+    "C3P4": [ 4.7, -6.865, 1.78],
+    "C3P5": [ 5.9, -6.865, 1.78],
+    "C3P6": [ 7.1, -6.865, 1.78],
+    "C4P1": [ 1.102, -7.165, 1.78],
+    "C4P2": [ 2.308, -7.165, 1.78],
+    "C4P3": [ 3.503, -7.165, 1.78],
+    "C4P4": [ 4.7, -7.165, 1.78],
+    "C4P5": [ 5.9, -7.165, 1.78],
+    "C4P6": [ 7.1, -7.165, 1.78],
+    "PORTA": [ 8.61, -7.473, 1.78]
 }
 
 # Radar origin
-radar_placement = np.array([0.995, -7.825, 1.70])
+radar_placement = np.array([0.995, -7.88, 1.78])
 
 
 # --- STEP 1: SENSOR FUSION ---
@@ -42,14 +72,29 @@ def fix_x_axis(row):
 
 
 def fuse_datasets():
+
+    BLE_DATASET_FILES = []
+    MMWAVE_DATASET_FILES = []
+    for test_name in TEST_NAMES:
+        ble_file = f"{BLE_DATASETS_PREFIX}{test_name}"
+        mmwave_file = f"{test_name}{MMW_DATASETS_SUFFIX}"
+        BLE_DATASET_FILES.append(ble_file)
+        MMWAVE_DATASET_FILES.append(mmwave_file)
     all_fused_data = []
-    mmwave_data = pd.read_csv(f"Results/{MMWAVE_DATASET_FILE}.csv")
-    mmwave_data["timestamp"] = pd.to_datetime(
-        mmwave_data["timestamp"], format="%d/%m/%Y %H:%M:%S"
-    )
+    all_mmw_data = pd.DataFrame()
+
+    for mmwave_file in MMWAVE_DATASET_FILES:
+        mmwave_data = pd.read_csv(f"Results/{mmwave_file.replace(MMW_DATASETS_SUFFIX,'')}/{mmwave_file}.csv")
+        mmwave_data["timestamp"] = pd.to_datetime(
+            mmwave_data["timestamp"], format="%d/%m/%Y %H:%M:%S"
+        )
+        all_mmw_data = pd.concat([all_mmw_data, mmwave_data], ignore_index=True)
 
     for ble_file in BLE_DATASET_FILES:
-        ble_data = pd.read_csv(f"Results/lab-experiment-results/{ble_file}.csv")
+        ble_data = pd.read_csv(f"Results/{ble_file.replace(BLE_DATASETS_PREFIX,'')}/{ble_file}.txt")
+        if ble_data.empty:
+            print(f"No data found in {ble_file}. Skipping fusion for this file.")
+            continue
         ble_data["create_time"] = ble_data.apply(createTimeToDt, axis=1)
 
         ble_data["create_time"] = pd.to_datetime(
@@ -60,11 +105,11 @@ def fuse_datasets():
         ble_data[["x_ble", "y_ble"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
 
         fusion_data = pd.merge(
-            ble_data, mmwave_data, left_on="create_time", right_on="timestamp", how="inner"
+            ble_data, all_mmw_data, left_on="create_time", right_on="timestamp", how="inner"
         )
 
         for point in EXPERIMENT_POINTS.keys():
-            if f"_{point}_" in ble_file:
+            if f"BLE_{point}" in ble_file:
                 fusion_data["real_xyz"] = [EXPERIMENT_POINTS[point]] * len(fusion_data)
                 fusion_data["distance"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - radar_placement)
 
@@ -90,6 +135,27 @@ def transform_coordinates(row):
     ])
     return [transformed[0].tolist(), transformed[1].tolist(), transformed[2].tolist()]
 
+def drop_static_points(row):
+    # there are n x,y,z,velocity points in each row
+    velocities = np.array(row['velocity'])
+    x_members = np.array(row['x'])
+    y_members = np.array(row['y'])
+    z_members = np.array(row['z'])
+    # Check if velocities are zero, if nth velocity is zero, drop x,y,z,velocity nth member.
+    i = 0
+    while (i < velocities.size):
+        if velocities[i] == 0:
+            x_members = np.delete(x_members, i)
+            y_members = np.delete(y_members, i)
+            z_members = np.delete(z_members, i)
+            velocities = np.delete(velocities, i)
+        else:
+            i += 1
+    row['x'] = x_members.tolist()
+    row['y'] = y_members.tolist()
+    row['z'] = z_members.tolist()
+    row['velocity'] = velocities.tolist()
+    return row[['x', 'y', 'z', 'velocity']]
 
 def calculate_centroid(row):
     centroid_x = round(np.mean(row['x']), 2)
@@ -103,10 +169,14 @@ def process_centroids(fusion_data):
     df['x'] = df['x'].apply(eval)
     df['y'] = df['y'].apply(eval)
     df['z'] = df['z'].apply(eval)
+    df['velocity'] = df['velocity'].apply(eval)
 
     df[['x', 'y', 'z']] = df.apply(transform_coordinates, axis=1, result_type='expand')
+    # drop static points with velocity 0
+    df[['x', 'y', 'z', 'velocity']] = df.apply(drop_static_points, axis=1, result_type='expand')
+    #drop rows where x,y,z are empty lists
+    df = df[df['x'].apply(lambda x: len(x) > 0) & df['y'].apply(lambda y: len(y) > 0) & df['z'].apply(lambda z: len(z) > 0)]
     df['centroid_xyz'] = df.apply(calculate_centroid, axis=1)
-
     df.to_csv(CENTROID_OUTPUT_FILE, index=False)
     print(f"Centroid calculation added to data at {CENTROID_OUTPUT_FILE}")
     return df
@@ -312,11 +382,11 @@ if __name__ == "__main__":
     centroid_data["X_mmwave_kf"], centroid_data["Y_mmwave_kf"] = mmwave_kf[:, 0], mmwave_kf[:, 1]
 
     print("\nOptimizing Track-to-Track Fusion...")
-    best_fusion_weights = optimize_track_to_track_fusion(centroid_data)
+    # best_fusion_weights = optimize_track_to_track_fusion(centroid_data)
 
     print("\nApplying Track-to-Track Fusion...")
-    fusion_x, fusion_y = track_to_track_fusion(centroid_data, best_fusion_weights['mmw_weight'], best_fusion_weights['ble_weight'])
-    centroid_data["X_fused"], centroid_data["Y_fused"] = fusion_x, fusion_y
+    # fusion_x, fusion_y = track_to_track_fusion(centroid_data, best_fusion_weights['mmw_weight'], best_fusion_weights['ble_weight'])
+    # centroid_data["X_fused"], centroid_data["Y_fused"] = fusion_x, fusion_y
 
     centroid_data.to_csv("FUSAO_PROCESSADA.csv", sep=';', index=False)
 

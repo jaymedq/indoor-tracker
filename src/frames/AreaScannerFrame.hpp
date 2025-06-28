@@ -76,6 +76,7 @@ private:
     MmwDemo_output_message_header_t header;
     MmwDemo_output_message_stats_t stats;
     std::vector<DPIF_PointCloudCartesian_t> pointCloud;
+    std::vector<DPIF_PointCloudCartesian_t> staticObjectsPointCloud;
 
     bool checkMagicPattern(const uint8_t *data) const;
     uint32_t getUint32(const std::vector<uint8_t> &data, int offset) const;

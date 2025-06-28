@@ -86,15 +86,15 @@ fused_values = []
 
 # Process each row (assumed to be sequential in time)
 def fuse_sensor_data(row, kf_mmwave, kf_ble, R_mmwave, R_ble):
-    try:
-        # Parse the string representations of the measurements
-        mm_meas = row["centroid_xyz"]
-        ble_meas = row["ble_xyz"]
-        if np.nan in mm_meas or np.nan in ble_meas:
-            raise ValueError("Invalid measurements")
-    except Exception as e:
-        mm_meas = [0.0, 0.0, 0.0]
-        ble_meas = [0.0, 0.0, 0.0]
+    # try:
+    # Parse the string representations of the measurements
+    mm_meas = row["centroid_xyz"]
+    ble_meas = row["ble_xyz"]
+    if np.nan in mm_meas or np.nan in ble_meas:
+        raise ValueError("Invalid measurements")
+    # except Exception as e:
+    #     mm_meas = [0.0, 0.0, 0.0]
+    #     ble_meas = [0.0, 0.0, 0.0]
 
     # Run Kalman filters
     kf_mmwave.predict()

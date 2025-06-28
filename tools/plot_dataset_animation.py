@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 
 from calculate_mse_mae_rmse import calculate_mse_mae_rmse
 
 # Load data
-data = pd.read_csv("../Results/ble_mmwave_fusion_all.csv")
+data = pd.read_csv("fused_dataset.csv", sep=";")
 data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 
 # Ensure stringified lists are parsed correctly
@@ -19,6 +19,8 @@ if "centroid_xyz" in data.columns:
     data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 if "real_xyz" in data.columns:
     data["real_xyz"] = data["real_xyz"].apply(eval)
+if "sensor_fused_xyz" in data.columns:
+    data["sensor_fused_xyz"] = data["sensor_fused_xyz"].apply(eval)
 
 # Calculate mse mae rmse
 errors = calculate_mse_mae_rmse(data)
@@ -114,8 +116,8 @@ ani = FuncAnimation(
     repeat_delay=3000,
 )
 
-video_writer = PillowWriter(fps=15)
-ani.save("plot_dataset_animation_output.gif", writer=video_writer)
+video_writer = FFMpegWriter(fps=15)
+ani.save("plot_dataset_animation_output.mp4", writer=video_writer)
 
 # Display the plot
 plt.show()

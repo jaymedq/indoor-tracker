@@ -47,18 +47,18 @@ def calculate_mse_mae_rmse(row: pd.DataFrame) -> dict:
     centroid_y = [x[1] for x in row["centroid_xyz"].values]
     centroid_z = [x[2] for x in row["centroid_xyz"].values]
 
-    triang_kf_x = row["X_est_TRIANG_KF"].values
-    triang_kf_y = row["Y_est_TRIANG_KF"].values
+    triang_kf_x = row["x_ble"].values
+    triang_kf_y = row["y_ble"].values
     triang_kf_z = 1.78  # Static z for estimation
 
-    fusao_x = row["X_est_FUSAO"].values
-    fusao_y = row["Y_est_FUSAO"].values
-    fusao_z = 1.78  # Static z for estimation
+    fusao_x = [x[0] for x in row["sensor_fused_xyz"].values]
+    fusao_y = [x[1] for x in row["sensor_fused_xyz"].values]
+    fusao_z = [x[2] for x in row["sensor_fused_xyz"].values]
 
     # Convert to numpy arrays
     real_3d = np.array([real_x, real_y, real_z])
     triang_kf_3d = np.array([triang_kf_x, triang_kf_y, [triang_kf_z] * len(real_z)])
-    fusao_3d = np.array([fusao_x, fusao_y, [fusao_z] * len(real_z)])
+    fusao_3d = np.array([fusao_x, fusao_y, fusao_z])
     centroid_3d = np.array([centroid_x, centroid_y, centroid_z])
 
     # Make sure NAN does not count.
@@ -95,11 +95,13 @@ def calculate_mse_mae_rmse(row: pd.DataFrame) -> dict:
 
 
 if __name__ == "__main__":
-    data = pd.read_csv("ble_mmwave_fusion_all.csv")
+    data = pd.read_csv("fused_dataset.csv")
     if "real_xyz" in data.columns:
         data["real_xyz"] = data["real_xyz"].apply(eval)
     if "centroid_xyz" in data.columns:
         data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
+    if "sensor_fused_xyz" in data.columns:
+        data["sensor_fused_xyz"] = data["sensor_fused_xyz"].apply(eval)
 
     data = calculate_mse_mae_rmse(data)
     # data.apply(calculate_mse_mae_rmse, axis=1)

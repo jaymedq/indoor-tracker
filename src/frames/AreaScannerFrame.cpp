@@ -59,7 +59,7 @@ void AreaScannerFrame::display() const
 
 void AreaScannerFrame::toCsv(const std::string& filePath) const {
 
-    if(pointCloud.size() < 1)
+    if(pointCloud.size() < 1 && staticObjectsPointCloud.size() < 1)
     {
         std::cout << "No pointcloud to be written to: " << filePath << std::endl;
     }
@@ -113,6 +113,38 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
             }
         }
         file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].x;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].y;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].z;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].velocity;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
         file << timeStream.str() << "\n";
         file.close();
         std::cout << "Point cloud data has been written to: " << filePath << std::endl;
@@ -135,6 +167,7 @@ uint32_t AreaScannerFrame::getUint32(const std::vector<uint8_t> &data, int offse
 // Function to parse TLV data based on type
 void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uint32_t length) {
     switch (type) {
+        case MMWDEMO_OUTPUT_MSG_STATIC_DETECTED_POINTS:
         case MMWDEMO_OUTPUT_MSG_DETECTED_POINTS:
         {
             if (length % sizeof(DPIF_PointCloudCartesian_t) != 0) {
@@ -148,10 +181,21 @@ void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uin
 
             std::cout << "Detected Points: " << numDetectedPoints << std::endl;
             for (int i = 0; i < detectedPoints.size(); ++i) {
-                pointCloud.push_back(detectedPoints[i]);
-                std::cout << "Point " << i << ": (" << detectedPoints[i].x << ", " 
-                          << detectedPoints[i].y << ", " << detectedPoints[i].z 
-                          << "), Velocity: " << detectedPoints[i].velocity << std::endl;
+                if(type == MMWDEMO_OUTPUT_MSG_STATIC_DETECTED_POINTS)
+                {
+                    staticObjectsPointCloud.push_back(detectedPoints[i]);
+                    std::cout << "Static Point " << i << ": (" << detectedPoints[i].x << ", " 
+                              << detectedPoints[i].y << ", " << detectedPoints[i].z 
+                              << "), Velocity: " << detectedPoints[i].velocity << std::endl;
+                    continue;
+                }
+                else if(type == MMWDEMO_OUTPUT_MSG_DETECTED_POINTS)
+                {
+                    pointCloud.push_back(detectedPoints[i]);
+                    std::cout << "Point " << i << ": (" << detectedPoints[i].x << ", " 
+                              << detectedPoints[i].y << ", " << detectedPoints[i].z 
+                              << "), Velocity: " << detectedPoints[i].velocity << std::endl;
+                }
             }
             break;
         }
