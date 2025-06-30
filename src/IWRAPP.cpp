@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     }
 
     std::cout << "Writing to file: " << filename << std::endl;
-    file << "numObj,x,y,z,velocity,x_static,y_static,z_static,velocity_static,timestamp\n";
+    file << "numObj,x,y,z,velocity,timestamp\n";
     file.close();
 
     try

@@ -114,15 +114,15 @@ def fuse_sensor_data(row, kf_mmwave, kf_ble, R_mmwave, R_ble):
     fused_position, fused_covariance = track_to_track_fusion(mean_mmwave, cov_mmwave, mean_ble, cov_ble)
     fused_position = fused_position.tolist()
     fused_position.append(1.78)  # Add Z coordinate
-    
 
     print("Fused Position:", fused_position)
     print("Fused Covariance:\n", fused_covariance)
 
-    return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[1][1]
+    return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[1][1], mean_ble[0], mean_ble[1], 1.78, mean_mmwave[0], mean_mmwave[1], 1.78
 
 # Radar origin
-radar_placement = np.array([0.995, -7.825, 1.70])
+radar_placement = np.array([0.995, -7.88, 1.78])
+
 def calculate_distance(row):
     return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)
 
@@ -137,12 +137,18 @@ for key, group in grouped_dict.items():
     R_mmwave = np.array([[0.01, 0], [0, 0.01]])  # More precise
     R_ble = np.array([[0.2, 0], [0, 0.2]])  # Less precise
 
-    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy"]] = group.apply(fuse_sensor_data, kf_mmwave=kf_mmwave, kf_ble=kf_ble, R_mmwave=R_mmwave, R_ble=R_ble, axis=1, result_type='expand')
+    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy", "x_ble_kf", "y_ble_kf", "z_ble_kf", "x_mmw_kf", "y_mmw_kf", "z_mmw_kf"]] = group.apply(fuse_sensor_data, kf_mmwave=kf_mmwave, kf_ble=kf_ble, R_mmwave=R_mmwave, R_ble=R_ble, axis=1, result_type='expand')
     df.loc[group.index, 'sensor_fused_xyz'] = group['sensor_fused_xyz']
     df.loc[group.index, 'cov_xx'] = group['cov_xx']
     df.loc[group.index, 'cov_xy'] = group['cov_xy']
     df.loc[group.index, 'cov_yx'] = group['cov_yx']
     df.loc[group.index, 'cov_yy'] = group['cov_yy']
+    df.loc[group.index, 'x_ble_kf'] = group['x_ble_kf']
+    df.loc[group.index, 'y_ble_kf'] = group['y_ble_kf']
+    df.loc[group.index, 'z_ble_kf'] = group['z_ble_kf']
+    df.loc[group.index, 'x_mmw_kf'] = group['x_mmw_kf']
+    df.loc[group.index, 'y_mmw_kf'] = group['y_mmw_kf']
+    df.loc[group.index, 'z_mmw_kf'] = group['z_mmw_kf']
     # Print the results
     print(f"Distance: {key}")
     print("Fused Position:", df['sensor_fused_xyz'].values)

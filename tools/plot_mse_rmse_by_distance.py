@@ -19,26 +19,21 @@ def calculate_distance(row):
 
 def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))
-    centroid_points = np.vstack(group['centroid_xyz'].apply(np.array))
-    triang_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
-    mmw_kf = np.column_stack((group['X_mmwave_kf'], group['Y_mmwave_kf'], np.full(len(group), 1.78)))
+    ble_kf_points = np.column_stack((group['x_ble_kf'], group['y_ble_kf'], np.full(len(group), 1.78)))
+    mmw_kf = np.column_stack((group['x_mmw_kf'], group['y_mmw_kf'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
 
-    mse_centroid = calculate_mse(real_points, centroid_points)
-    mse_triang = calculate_mse(real_points, triang_points)
+    mse_ble_kf = calculate_mse(real_points, ble_kf_points)
     mse_mmw_kf = calculate_mse(real_points, mmw_kf)
     mse_fusion = calculate_mse(real_points, fusion_points)
 
-    rmse_centroid = calculate_rmse(real_points, centroid_points)
-    rmse_triang = calculate_rmse(real_points, triang_points)
+    rmse_ble_kf = calculate_rmse(real_points, ble_kf_points)
     rmse_mmw_kf = calculate_rmse(real_points, mmw_kf)
     rmse_fusion = calculate_rmse(real_points, fusion_points)
 
     return pd.Series({
-        'MSE_MMW_Centroid': mse_centroid,
-        'RMSE_MMW_Centroid': rmse_centroid,
-        'MSE_BLE_Triang': mse_triang,
-        'RMSE_BLE_Triang': rmse_triang,
+        'MSE_BLE_KF': mse_ble_kf,
+        'RMSE_BLE_KF': rmse_ble_kf,
         'MSE_MMW_KF': mse_mmw_kf,
         'RMSE_MMW_KF': rmse_mmw_kf,
         'MSE_TTFKF_MMW_BLE_Fusion': mse_fusion,
@@ -56,7 +51,7 @@ results.to_csv("error_by_distance.csv", index=False)
 
 # Plotting MSE by Distance
 plt.figure(figsize=(12, 6))
-methods = ['MMW_Centroid', 'BLE_Triang', 'MMW_KF', 'TTFKF_MMW_BLE_Fusion']
+methods = ['BLE_KF', 'MMW_KF', 'TTFKF_MMW_BLE_Fusion']
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
     print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))

@@ -10,19 +10,18 @@ from sklearn.model_selection import ParameterGrid
 BLE_DATASETS_PREFIX = "exported_"
 MMW_DATASETS_SUFFIX = "_mmwave_data"
 TEST_NAMES = [
-    # "T002_MMW_PA_BLE_C3P1",
-    # "T003_MMW_PA_BLE_C3P2",
-    # "T004_MMW_PA_BLE_C3P3",
-    # "T005_MMW_PA_BLE_C3P4",
-    # "T006_MMW_PA_BLE_C3P5",
-    # "T007_MMW_PA_BLE_C3P6"
-    # "T008_MMW_PA_BLE_PORTA",
-    "T009_MMW_PA_BLE_C4P6",
-    "T010_MMW_PA_BLE_C4P3",
-    "T010_MMW_PA_BLE_C4P5",
-    "T011_MMW_PA_BLE_C4P4",
-    "T013_MMW_PA_BLE_C4P2",
-    "T014_MMW_PA_BLE_C4P1",
+    "T029_MMW_A1_BLE_C3P1",
+    "T030_MMW_A1_BLE_C3P2",
+    "T031_MMW_A1_BLE_C3P3",
+    "T032_MMW_A1_BLE_C3P4",
+    "T033_MMW_A1_BLE_C3P5",
+    "T034_MMW_A1_BLE_C4PA",
+    # "T035_MMW_A1_BLE_CVP1",
+    # "T036_MMW_A1_BLE_CVP2",
+    # "T037_MMW_A1_BLE_CVP3",
+    # "T038_MMW_A1_BLE_CVP4",
+    # "T038_MMW_A1_BLE_CVP5",
+    # "T040_MMW_A1_BLE_C4PV"
 ]
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
@@ -44,13 +43,13 @@ EXPERIMENT_POINTS = {
     "C3P3": [ 3.503, -6.865, 1.78],
     "C3P4": [ 4.7, -6.865, 1.78],
     "C3P5": [ 5.9, -6.865, 1.78],
-    "C3P6": [ 7.1, -6.865, 1.78],
-    "C4P1": [ 1.102, -7.165, 1.78],
-    "C4P2": [ 2.308, -7.165, 1.78],
-    "C4P3": [ 3.503, -7.165, 1.78],
-    "C4P4": [ 4.7, -7.165, 1.78],
-    "C4P5": [ 5.9, -7.165, 1.78],
-    "C4P6": [ 7.1, -7.165, 1.78],
+    "C4PA": [ 7.1, -6.865, 1.78],
+    "CVP1": [ 1.102, -7.165, 1.78],
+    "CVP2": [ 2.308, -7.165, 1.78],
+    "CVP3": [ 3.503, -7.165, 1.78],
+    "CVP4": [ 4.7, -7.165, 1.78],
+    "CVP5": [ 5.9, -7.165, 1.78],
+    "C4PV": [ 7.1, -7.165, 1.78],
     "PORTA": [ 8.61, -7.473, 1.78]
 }
 
@@ -374,12 +373,12 @@ if __name__ == "__main__":
     centroid_data["Y_mmw_centroid"] = [x[1] for x in centroid_data["centroid_xyz"].values]
 
     print("\nOptimizing Kalman Filter...")
-    best_mmw_params = optimize_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid", "real_xyz")
+    # best_mmw_params = optimize_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid", "real_xyz")
 
     print("\nApplying Kalman Filter...")
-    mmwave_kf = apply_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid", best_mmw_params)
+    # mmwave_kf = apply_kalman_filter(centroid_data, "X_mmw_centroid", "Y_mmw_centroid", best_mmw_params)
 
-    centroid_data["X_mmwave_kf"], centroid_data["Y_mmwave_kf"] = mmwave_kf[:, 0], mmwave_kf[:, 1]
+    # centroid_data["X_mmwave_kf"], centroid_data["Y_mmwave_kf"] = mmwave_kf[:, 0], mmwave_kf[:, 1]
 
     print("\nOptimizing Track-to-Track Fusion...")
     # best_fusion_weights = optimize_track_to_track_fusion(centroid_data)
