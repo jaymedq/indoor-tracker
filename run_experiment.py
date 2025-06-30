@@ -3,12 +3,15 @@ This script runs the IWRApp.exe application and annotates BLE acquisition in the
 It uses subprocess to execute mmWave radar data acquisition and SQLAlchemy ORM to annotate and fetch BLE data.
 It reuses a modular ORM reflection structure with automap.
 At the end of the experiment, it stops the mmWave app, performs a query to retrieve BLE data, and saves it to CSV.
+
+Usage:
+py run_experiment.py --test_name "Test01" --test_description "Walking from point A to B"
 """
 
 import subprocess
 import os
+import argparse
 from time import sleep
-import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
@@ -22,20 +25,16 @@ from sigivest.ble_query_helper import (
     end_test
 )
 
-def run_experiment():
-    test_name = input("Type a name for the test:\n")
-    test_description = input("Type a description of the test:\n")
+def run_experiment(test_name, test_description):
     mmwave_data_output = f"{test_name}_mmwave_data.csv"
     ble_data_oputput = f"{test_name}_ble_data.csv"
 
     print(f"Test: {test_name} - {test_description}")
     input("Press Enter to start...")
-    sleep(6) # Time for user to prepare for the experiment.
+    sleep(8) # Time for user to prepare for the experiment.
     print("Starting mmWave application...")
-    mmwave_app_path = os.path.join(os.path.dirname(__file__),"build","IWRApp.exe")
-    #Call IRWApp with output file name as parameter
-    process = subprocess.Popen([mmwave_app_path, '-o', mmwave_data_output],)
-    # Wait script startu
+    mmwave_app_path = os.path.join(os.path.dirname(__file__), "build", "IWRApp.exe")
+    process = subprocess.Popen([mmwave_app_path, '-o', mmwave_data_output])
     sleep(1)
 
     engine = create_engine(load_database_url())
@@ -49,7 +48,6 @@ def run_experiment():
         print("Annotating BLE acquisition in the database...")
         start_test(session, test_name, test_description)
         sleep(TEST_TIME)
-        # input("Press Enter to end the test...")
         end_test(session, test_name)
         process.terminate()
         print("mmWave application terminated.")
@@ -60,13 +58,10 @@ def run_experiment():
         # ble_data_df.to_csv(ble_data_oputput, index=False)
 
         print("Experiment completed successfully.")
-        # move output files to a subdirectory named after the test inside Results folder
         results_dir = os.path.join(os.path.dirname(__file__), "Results")
-        if not os.path.exists(results_dir):
-            os.makedirs(results_dir)
-        output_dir = os.path.join(results_dir,test_name)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        os.makedirs(results_dir, exist_ok=True)
+        output_dir = os.path.join(results_dir, test_name)
+        os.makedirs(output_dir, exist_ok=True)
         os.rename(mmwave_data_output, os.path.join(output_dir, mmwave_data_output))
         # os.rename(ble_data_oputput, os.path.join(output_dir, ble_data_oputput))
 
@@ -77,11 +72,16 @@ def run_experiment():
 
     finally:
         session.close()
-        if(process.poll() is None):
+        if process.poll() is None:
             process.terminate()
             print("mmWave application terminated.")
         print("Stopped mmWave application.")
 
 if __name__ == "__main__":
-    run_experiment()
+    parser = argparse.ArgumentParser(description="Run mmWave + BLE acquisition experiment")
+    parser.add_argument("--test_name", required=True, help="Unique name for the test")
+    parser.add_argument("--test_description", required=True, help="Description of the test scenario")
+    args = parser.parse_args()
+
+    run_experiment(args.test_name, args.test_description)
     print("Experiment script finished.")
