@@ -22,6 +22,8 @@ def calculate_errors(group):
     ble_kf_points = np.column_stack((group['x_ble_kf'], group['y_ble_kf'], np.full(len(group), 1.78)))
     mmw_kf = np.column_stack((group['x_mmw_kf'], group['y_mmw_kf'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
+    real_x = real_points[:, 0][0]
+    real_y = real_points[0, 1]
 
     mse_ble_kf = calculate_mse(real_points, ble_kf_points)
     mse_mmw_kf = calculate_mse(real_points, mmw_kf)
@@ -37,7 +39,9 @@ def calculate_errors(group):
         'MSE_MMW_KF': mse_mmw_kf,
         'RMSE_MMW_KF': rmse_mmw_kf,
         'MSE_TTFKF_MMW_BLE_Fusion': mse_fusion,
-        'RMSE_TTFKF_MMW_BLE_Fusion': rmse_fusion
+        'RMSE_TTFKF_MMW_BLE_Fusion': rmse_fusion,
+        'x': real_x,
+        'y': real_y
     })
 
 # Calculate distances
@@ -74,4 +78,46 @@ plt.xlabel('Distance')
 plt.ylabel('RMSE')
 plt.legend()
 plt.grid(True)
+plt.show()
+
+from matplotlib import cm
+from scipy.interpolate import griddata
+
+# --- 3D Surface Plot of RMSE ---
+
+fig = plt.figure(figsize=(21, 7))
+methods = ['BLE_KF', 'MMW_KF', 'TTFKF_MMW_BLE_Fusion']
+
+results['y'] += np.random.normal(0, 1e-4, len(results['y']))
+
+# Prepare data for interpolation
+points = results[['x', 'y']].values
+grid_x, grid_y = np.mgrid[
+    0:9:100j,
+    results['y'].min():results['y'].max():100j
+]
+
+for i, method in enumerate(methods):
+    ax = fig.add_subplot(1, 3, i + 1, projection='3d')
+    values = results[f'RMSE_{method}'].values
+
+    # Interpolate the Z values (RMSE) onto the grid
+    grid_z = griddata(points, values, (grid_x, grid_y), method='cubic')
+
+    # Plot the surface
+    surf = ax.plot_surface(grid_x, grid_y, grid_z, cmap=cm.viridis_r, linewidth=0, antialiased=False)
+
+    # Add a color bar which maps values to colors
+    fig.colorbar(surf, shrink=0.5, aspect=10, label='RMSE (meters)')
+
+    # Formatting the plot
+    ax.set_title(f'3D Surface of {method} RMSE', fontsize=14, pad=20)
+    ax.set_xlabel('X Position (meters)', fontsize=10, labelpad=10)
+    ax.set_ylabel('Y Position (meters)', fontsize=10, labelpad=10)
+    ax.set_zlabel('RMSE (meters)', fontsize=10, labelpad=10)
+
+    # Adjust view angle
+    ax.view_init(elev=35, azim=-45)
+
+plt.tight_layout()
 plt.show()
