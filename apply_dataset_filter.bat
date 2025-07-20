@@ -1,0 +1,12 @@
+py tools\ble_aoa_improver.py --input "Results\T029_MMW_A1_BLE_C3P1\exported_T029_MMW_A1_BLE_C3P1.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T030_MMW_A1_BLE_C3P2\exported_T030_MMW_A1_BLE_C3P2.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T031_MMW_A1_BLE_C3P3\exported_T031_MMW_A1_BLE_C3P3.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T032_MMW_A1_BLE_C3P4\exported_T032_MMW_A1_BLE_C3P4.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T033_MMW_A1_BLE_C3P5\exported_T033_MMW_A1_BLE_C3P5.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T034_MMW_A1_BLE_C4PA\exported_T034_MMW_A1_BLE_C4PA.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T035_MMW_A1_BLE_CVP1\exported_T035_MMW_A1_BLE_CVP1.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T036_MMW_A1_BLE_CVP2\exported_T036_MMW_A1_BLE_CVP2.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T037_MMW_A1_BLE_CVP3\exported_T037_MMW_A1_BLE_CVP3.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T038_MMW_A1_BLE_CVP4\exported_T038_MMW_A1_BLE_CVP4.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T038_MMW_A1_BLE_CVP5\exported_T038_MMW_A1_BLE_CVP5.txt" --columns x y --threshold 0.2
+py tools\ble_aoa_improver.py --input "Results\T040_MMW_A1_BLE_C4PV\exported_T040_MMW_A1_BLE_C4PV.txt" --columns x y --threshold 0.2

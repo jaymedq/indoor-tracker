@@ -37,7 +37,7 @@ class KalmanFilter2D:
         y = z - np.dot(self.H, self.x)
 
         # Calculate measurement noise covariance using the covariance of the measurement noise
-        self.R = np.eye(2) * np.array([0.01, 0.01])  # Example covariance for the measurement
+        self.R = np.eye(2) * np.array([0.01, 0.5])  # Example covariance for the measurement
 
         # Innovation covariance
         S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
