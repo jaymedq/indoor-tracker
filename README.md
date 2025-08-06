@@ -1,6 +1,6 @@
 # Indoor Tracker System - Sigivest Project
 
-This project is part of the Sigivest research initiative at the Laboratory of Computing Solutions (LabSC) at UTFPR. It implements an indoor tracking system that fuses data from a millimeter-wave (mmWave) radar sensor and Bluetooth Low Energy (BLE) beacons to accurately track the position of people within a room.
+This project is part of the Sigivest research initiative at the Laboratory of Communication Systems (LabSC) at UTFPR. It implements an indoor tracking system that fuses data from a millimeter-wave (mmWave) radar sensor and Bluetooth Low Energy (BLE) beacons to accurately track the position of people within a room.
 
 ## Hardware
 
