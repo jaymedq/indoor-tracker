@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 class KalmanFilter2D:
-    def __init__(self):
+    def __init__(self, noise_covariance=None):
         # State vector [x, y]
         self.x = np.array([0, 0], dtype=float)
         
@@ -17,7 +17,11 @@ class KalmanFilter2D:
         self.H = np.eye(2)
 
         # Measurement noise covariance (Will be updated dynamically)
-        self.R = np.eye(2)
+        if noise_covariance is not None:
+            self.R = noise_covariance
+        else:
+            # Default
+            self.R = np.eye(2) * 0.1
 
         # Initial covariance matrix (High uncertainty initially)
         self.P = np.eye(2) * 1.0
@@ -37,7 +41,7 @@ class KalmanFilter2D:
         y = z - np.dot(self.H, self.x)
 
         # Calculate measurement noise covariance using the covariance of the measurement noise
-        self.R = np.eye(2) * np.array([0.01, 0.5])  # Example covariance for the measurement
+        # self.R = np.array([[xcov,0.0],[0.0,ycov]]) # Update dynamically in future.
 
         # Innovation covariance
         S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
@@ -85,7 +89,7 @@ df["real_xyz"] = df["real_xyz"].apply(eval)
 fused_values = []
 
 # Process each row (assumed to be sequential in time)
-def fuse_sensor_data(row, kf_mmwave, kf_ble, R_mmwave, R_ble):
+def fuse_sensor_data(row, kf_mmwave, kf_ble):
     # try:
     # Parse the string representations of the measurements
     mm_meas = row["centroid_xyz"]
@@ -131,13 +135,10 @@ df['distance'] = df.apply(calculate_distance, axis=1)
 
 grouped_dict = {key: group for key, group in df.groupby("distance")}
 for key, group in grouped_dict.items():
-    kf_mmwave = KalmanFilter2D()
-    kf_ble = KalmanFilter2D()
-    # Example measurement noise covariance for each sensor
-    R_mmwave = np.array([[0.01, 0], [0, 0.01]])  # More precise
-    R_ble = np.array([[0.2, 0], [0, 0.2]])  # Less precise
+    kf_mmwave = KalmanFilter2D(np.array([[0.1, 0.0], [0, 0.2]]))
+    kf_ble = KalmanFilter2D([[0.01, 0.0], [0.0, 0.5]])
 
-    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy", "x_ble_kf", "y_ble_kf", "z_ble_kf", "x_mmw_kf", "y_mmw_kf", "z_mmw_kf"]] = group.apply(fuse_sensor_data, kf_mmwave=kf_mmwave, kf_ble=kf_ble, R_mmwave=R_mmwave, R_ble=R_ble, axis=1, result_type='expand')
+    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy", "x_ble_kf", "y_ble_kf", "z_ble_kf", "x_mmw_kf", "y_mmw_kf", "z_mmw_kf"]] = group.apply(fuse_sensor_data, kf_mmwave=kf_mmwave, kf_ble=kf_ble, axis=1, result_type='expand')
     df.loc[group.index, 'sensor_fused_xyz'] = group['sensor_fused_xyz']
     df.loc[group.index, 'cov_xx'] = group['cov_xx']
     df.loc[group.index, 'cov_xy'] = group['cov_xy']
