@@ -9,7 +9,9 @@ data = pd.read_csv("fused_dataset.csv", sep=';')
 # Ensure stringified lists are parsed correctly
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
-data["sensor_fused_xyz"] = data["sensor_fused_xyz"].apply(eval)
+data['sensor_fused_xyz'] = data['sensor_fused_xyz'].apply(eval)
+data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
+data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
 # Radar origin
 radar_placement = np.array([0.995, -7.825, 1.70])
@@ -19,8 +21,8 @@ def calculate_distance(row):
 
 def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))
-    ble_kf_points = np.column_stack((group['x_ble_kf'], group['y_ble_kf'], np.full(len(group), 1.78)))
-    mmw_kf = np.column_stack((group['x_mmw_kf'], group['y_mmw_kf'], np.full(len(group), 1.78)))
+    ble_kf_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
+    mmw_kf = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
     real_x = real_points[:, 0][0]
     real_y = real_points[0, 1]
