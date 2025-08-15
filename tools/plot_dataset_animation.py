@@ -69,7 +69,22 @@ def update(frame):
             s=50,
             label="Centroid",
         )
-
+    # Plot the sensor_fused in yellow
+    sensor_fused = (
+        timestamp_data["sensor_fused_xyz"].values[0]
+        if "sensor_fused_xyz" in timestamp_data.columns
+        else None
+    )
+    if sensor_fused:
+        ax.scatter(
+            sensor_fused[0],
+            sensor_fused[1],
+            sensor_fused[2],
+            c="y",
+            marker="^",
+            s=50,
+            label="sensor_fused",
+        )
     # Plot the real_xyz points in green
     error = 0
     if real_points:

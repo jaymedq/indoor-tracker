@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 
 class MultiSensorKalman:
-    def __init__(self):
+    def __init__(self, initial_state = np.array([0, 0, 0, 0])):
         # State vector [x, y, vx, vy] so we can handle movement
         self.dt = 1.0
-        self.x = np.zeros(4)
+        self.x = initial_state
 
         # State transition
         self.F = np.array([
@@ -72,10 +72,15 @@ def calculate_distance(row):
 df['distance'] = df.apply(calculate_distance, axis=1)
 
 
-R_mm = np.eye(2) * 0.1
-R_ble = np.eye(2) * 0.05
-
-
+H_mm = np.array([[1, 0, 0, 0],
+                    [0, 1, 0, 0]])
+R_mm = np.array([[0.1, 0],
+                    [0, 0.2]])
+H_ble = np.array([[1, 0, 0, 0],
+                [0, 1, 0, 0]])
+R_ble = np.array([[0.01, 0],
+                [0, 0.5]])
+kf.x = np.array([df.loc[0, "centroid_xyz"][0], df.loc[0, "centroid_xyz"][1], 0, 0])
 for i, row in df.iterrows():
     mm_meas = np.array(row["centroid_xyz"][:2])
     ble_meas = np.array(row["ble_xyz"][:2])
@@ -83,18 +88,10 @@ for i, row in df.iterrows():
     kf.predict()
 
     # Update with mmWave
-    H_mm = np.array([[1, 0, 0, 0],
-                     [0, 1, 0, 0]])
-    R_mm = np.array([[0.1, 0],
-                     [0, 0.2]])
-    kf.update(mm_meas, H_mm, R_mm, adaptive=True)
+    R_mm = kf.update(mm_meas, H_mm, R_mm, adaptive=True)
 
     # Update with BLE
-    H_ble = np.array([[1, 0, 0, 0],
-                      [0, 1, 0, 0]])
-    R_ble = np.array([[0.01, 0],
-                      [0, 0.5]])
-    kf.update(ble_meas, H_ble, R_ble, adaptive=True)
+    R_ble = kf.update(ble_meas, H_ble, R_ble, adaptive=True)
 
     print("Fused position:", kf.get_state())
 

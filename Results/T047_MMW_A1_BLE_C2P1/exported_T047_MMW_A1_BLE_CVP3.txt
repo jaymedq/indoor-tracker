@@ -1,0 +1,1 @@
+create_time,idppe,idbeacon,bluetooth_channel,rssi_1,rssi_2,rssi_3,rssi_4,az_1,az_2,az_3,az_4,el_1,el_2,el_3,el_4,x,y,z

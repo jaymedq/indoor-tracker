@@ -10,18 +10,26 @@ from sklearn.model_selection import ParameterGrid
 BLE_DATASETS_PREFIX = "exported_"
 MMW_DATASETS_SUFFIX = "_mmwave_data"
 TEST_NAMES = [
-    "T029_MMW_A1_BLE_C3P1",
-    "T030_MMW_A1_BLE_C3P2",
-    "T031_MMW_A1_BLE_C3P3",
-    "T032_MMW_A1_BLE_C3P4",
-    "T033_MMW_A1_BLE_C3P5",
-    "T034_MMW_A1_BLE_C4PA",
-    # "T035_MMW_A1_BLE_CVP1",
-    # "T036_MMW_A1_BLE_CVP2",
-    # "T037_MMW_A1_BLE_CVP3",
-    # "T038_MMW_A1_BLE_CVP4",
-    # "T038_MMW_A1_BLE_CVP5",
-    # "T040_MMW_A1_BLE_C4PV"
+    # "T029_MMW_A1_BLE_C3P1",
+    # "T030_MMW_A1_BLE_C3P2",
+    # "T031_MMW_A1_BLE_C3P3",
+    # "T032_MMW_A1_BLE_C3P4",
+    # "T033_MMW_A1_BLE_C3P5",
+    # "T034_MMW_A1_BLE_C4PA",
+    "T047_MMW_A1_BLE_C2P1",
+    "T048_MMW_A1_BLE_C2P2",
+    "T049_MMW_A1_BLE_C2P3",
+    "T050_MMW_A1_BLE_C2P4",
+    "T051_MMW_A1_BLE_C2P5",
+    "T052_MMW_A1_BLE_C4P4",
+    "T053_MMW_A1_BLE_C4P5",
+    "T054_MMW_A1_BLE_C4P6",
+    "T055_MMW_A1_BLE_C3P5",
+    "T056_MMW_A1_BLE_C3P4",
+    "T057_MMW_A1_BLE_C3P3",
+    "T058_MMW_A1_BLE_C3P2",
+    "T059_MMW_A1_BLE_C4P1",
+    "T060_MMW_A1_BLE_C1P5"
 ]
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
@@ -48,13 +56,20 @@ EXPERIMENT_POINTS = {
     "CVP2": [ 2.308, -7.165, 1.78],
     "CVP3": [ 3.503, -7.165, 1.78],
     "CVP4": [ 4.7, -7.165, 1.78],
+    "C4P1":	[7.144, -0.863, 1.78],
+    "C4P2":	[7.143, -2.015, 1.78],
+    "C4P3":	[7.1, -3.215, 1.78],
+    "C4P4":	[7.13, -4.462, 1.78],
+    "C4P5":	[7.14, -5.618, 1.78],
+    "C4P6":	[7.1, -6.865, 1.78],
     "CVP5": [ 5.9, -7.165, 1.78],
     "C4PV": [ 7.1, -7.165, 1.78],
     "PORTA": [ 8.61, -7.473, 1.78]
 }
 
 # Radar origin
-radar_placement = np.array([0.995, -7.88, 1.78])
+# radar_placement = np.array([0.995, -7.88, 1.78])
+radar_placement = np.array([0.98, -4.5, 1.78])
 
 
 # --- STEP 1: SENSOR FUSION ---
