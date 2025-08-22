@@ -22,27 +22,27 @@ def calculate_distance(row):
 
 def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))
-    ble_kf_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
-    mmw_kf = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
+    ble_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
+    mmw = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
     real_x = real_points[:, 0][0]
     real_y = real_points[0, 1]
 
-    mse_ble_kf = calculate_mse(real_points, ble_kf_points)
-    mse_mmw_kf = calculate_mse(real_points, mmw_kf)
+    mse_ble = calculate_mse(real_points, ble_points)
+    mse_mmw = calculate_mse(real_points, mmw)
     mse_fusion = calculate_mse(real_points, fusion_points)
 
-    rmse_ble_kf = calculate_rmse(real_points, ble_kf_points)
-    rmse_mmw_kf = calculate_rmse(real_points, mmw_kf)
+    rmse_ble = calculate_rmse(real_points, ble_points)
+    rmse_mmw = calculate_rmse(real_points, mmw)
     rmse_fusion = calculate_rmse(real_points, fusion_points)
 
     return pd.Series({
-        'MSE_BLE_KF': mse_ble_kf,
-        'RMSE_BLE_KF': rmse_ble_kf,
-        'MSE_MMW_KF': mse_mmw_kf,
-        'RMSE_MMW_KF': rmse_mmw_kf,
-        'MSE_TTFKF_MMW_BLE_Fusion': mse_fusion,
-        'RMSE_TTFKF_MMW_BLE_Fusion': rmse_fusion,
+        'MSE_BLE': mse_ble,
+        'RMSE_BLE': rmse_ble,
+        'MSE_MMW': mse_mmw,
+        'RMSE_MMW': rmse_mmw,
+        'MSE_TTF_MMW_BLE_Fusion': mse_fusion,
+        'RMSE_TTF_MMW_BLE_Fusion': rmse_fusion,
         'x': real_x,
         'y': real_y
     })
@@ -58,7 +58,7 @@ results.to_csv("error_by_distance.csv", index=False)
 
 # Plotting MSE by Distance
 plt.figure(figsize=(12, 6))
-methods = ['BLE_KF', 'MMW_KF', 'TTFKF_MMW_BLE_Fusion']
+methods = ['BLE', 'MMW', 'TTF_MMW_BLE_Fusion']
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
     print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
@@ -88,8 +88,8 @@ from scipy.interpolate import griddata
 
 # --- 3D Surface Plot of RMSE ---
 
-fig = plt.figure(figsize=(21, 7))
-methods = ['BLE_KF', 'MMW_KF', 'TTFKF_MMW_BLE_Fusion']
+fig = plt.figure(figsize=plt.figaspect(0.5))
+methods = ['BLE', 'MMW', 'TTF_MMW_BLE_Fusion']
 
 results['y'] += np.random.normal(0, 1e-4, len(results['y']))
 
@@ -111,7 +111,7 @@ for i, method in enumerate(methods):
     surf = ax.plot_surface(grid_x, grid_y, grid_z, cmap=cm.viridis_r, linewidth=0, antialiased=False)
 
     # Add a color bar which maps values to colors
-    fig.colorbar(surf, shrink=0.5, aspect=10, label='RMSE (meters)')
+    fig.colorbar(surf, shrink=0.4, location='left')
 
     # Formatting the plot
     ax.set_title(f'3D Surface of {method} RMSE', fontsize=14, pad=20)
@@ -122,5 +122,6 @@ for i, method in enumerate(methods):
     # Adjust view angle
     ax.view_init(elev=35, azim=-45)
 
-plt.tight_layout()
+plt.tight_layout(w_pad=7)
+plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.3, hspace=0.5)
 plt.show()

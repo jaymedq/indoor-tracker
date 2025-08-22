@@ -6,43 +6,48 @@ import matplotlib.pyplot as plt
 
 def filter_dataset(input_file, columns, threshold, output):
     df_original = pd.read_csv(input_file)
+    df_filtered = df_original.copy()
     original_count = len(df_original)
 
     fig, axes = plt.subplots(len(columns), 1, figsize=(10, 5 * len(columns)))
     if len(columns) == 1:
         axes = [axes]
 
-    combined_outlier_mask = pd.Series([False] * original_count, index=df_original.index)
+    total_replaced = 0
 
-    # First pass: compute outliers across all columns
-    for col in columns:
-        # Drop NaN values for safety
+    for i, col in enumerate(columns):
         values = df_original[col].dropna()
 
-        # Create histogram
+        # Histogram for reference
         hist, bin_edges = np.histogram(values, bins=50)
-
-        # Find the most frequent bin
         most_frequent_bin_index = np.argmax(hist)
         mode_bin_center = (bin_edges[most_frequent_bin_index] + bin_edges[most_frequent_bin_index + 1]) / 2
 
-        # Filter based on distance from mode bin center
-        deviation = np.abs(df_original[col] - mode_bin_center)
-        outliers_in_col = deviation > threshold
-        combined_outlier_mask |= outliers_in_col
+        # Create new filtered column
+        filtered_col = f"{col}_filter"
+        df_filtered[filtered_col] = df_original[col].copy()
 
-    df_filtered = df_original[~combined_outlier_mask]
+        moving_mean = []
+        replaced_count = 0
 
-    # Plot before and after for each column
-    for i, col in enumerate(columns):
-        original_values = df_original[col].dropna()
-        filtered_values = df_filtered[col].dropna()
+        for idx, val in enumerate(df_original[col]):
+            if pd.isna(val):
+                continue
 
-        bins = np.histogram_bin_edges(original_values, bins=50)
+            deviation = abs(val - mode_bin_center)
+            if deviation > threshold:
+                if moving_mean:  # replace in the new column only
+                    df_filtered.at[idx, filtered_col] = np.mean(moving_mean)
+                    replaced_count += 1
+            else:
+                moving_mean.append(val)
 
-        axes[i].hist(original_values, bins=bins, color='skyblue', alpha=0.6, label='Before Filter', zorder=1)
-        axes[i].hist(filtered_values, bins=bins, color='lightcoral', alpha=0.6, label='After Filter', zorder=2)
-        
+        total_replaced += replaced_count
+
+        # Plot before vs after
+        bins = np.histogram_bin_edges(values, bins=50)
+        axes[i].hist(values, bins=bins, color='skyblue', alpha=0.6, label='Original', zorder=1)
+        axes[i].hist(df_filtered[filtered_col].dropna(), bins=bins, color='lightcoral', alpha=0.6, label='Filtered', zorder=2)
         axes[i].set_title(f'Histogram for {col}')
         axes[i].set_xlabel(col)
         axes[i].set_ylabel('Frequency')
@@ -50,22 +55,16 @@ def filter_dataset(input_file, columns, threshold, output):
 
     fig.suptitle(f'TH: {threshold}, input: {os.path.basename(input_file)}', fontsize=16)
     plt.tight_layout()
-    
-    # Build path for saving histogram image
+
+    # Save histogram
     input_folder = os.path.dirname(input_file)
     input_basename = os.path.splitext(os.path.basename(input_file))[0]
     output_hist_path = os.path.join(input_folder, f"histogram_{input_basename}.png")
-    
     plt.savefig(output_hist_path)
     print(f"Histogram saved to: {output_hist_path}")
-    
     plt.close()
 
-    filtered_count = len(df_filtered)
-    removed_count = original_count - filtered_count
-    if original_count > 0:
-        percentage_removed = (removed_count / original_count) * 100
-        print(f"\nRemoved {removed_count} rows ({percentage_removed:.2f}%) identified as outliers")
+    print(f"\nAdded filtered columns with '_filter' suffix. Replaced {total_replaced} outlier values.")
 
     # Save the filtered data
     if output:

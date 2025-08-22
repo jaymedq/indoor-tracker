@@ -10,26 +10,32 @@ from sklearn.model_selection import ParameterGrid
 BLE_DATASETS_PREFIX = "exported_"
 MMW_DATASETS_SUFFIX = "_mmwave_data"
 TEST_NAMES = [
-    # "T029_MMW_A1_BLE_C3P1",
-    # "T030_MMW_A1_BLE_C3P2",
-    # "T031_MMW_A1_BLE_C3P3",
-    # "T032_MMW_A1_BLE_C3P4",
-    # "T033_MMW_A1_BLE_C3P5",
-    # "T034_MMW_A1_BLE_C4PA",
-    "T047_MMW_A1_BLE_C2P1",
-    "T048_MMW_A1_BLE_C2P2",
-    "T049_MMW_A1_BLE_C2P3",
-    "T050_MMW_A1_BLE_C2P4",
-    "T051_MMW_A1_BLE_C2P5",
-    "T052_MMW_A1_BLE_C4P4",
-    "T053_MMW_A1_BLE_C4P5",
-    "T054_MMW_A1_BLE_C4P6",
-    "T055_MMW_A1_BLE_C3P5",
-    "T056_MMW_A1_BLE_C3P4",
-    "T057_MMW_A1_BLE_C3P3",
-    "T058_MMW_A1_BLE_C3P2",
-    "T059_MMW_A1_BLE_C4P1",
-    "T060_MMW_A1_BLE_C1P5"
+    # "T029_MMW_A1_BLE_C3P1", #OUT OF FOV, DISCARD!!!
+    "T030_MMW_A1_BLE_C3P2",
+    "T031_MMW_A1_BLE_C3P3",
+    "T032_MMW_A1_BLE_C3P4",
+    "T033_MMW_A1_BLE_C3P5",
+    "T034_MMW_A1_BLE_C4PA",
+    # "T035_MMW_A1_BLE_CVP1",
+    # "T036_MMW_A1_BLE_CVP2",
+    # "T037_MMW_A1_BLE_CVP3",
+    # "T038_MMW_A1_BLE_CVP4",
+    # "T038_MMW_A1_BLE_CVP5",
+    # "T040_MMW_A1_BLE_C4PV",
+    # "T047_MMW_A1_BLE_C2P1",
+    # "T048_MMW_A1_BLE_C2P2",
+    # "T049_MMW_A1_BLE_C2P3",
+    # "T050_MMW_A1_BLE_C2P4",
+    # "T051_MMW_A1_BLE_C2P5",
+    # "T052_MMW_A1_BLE_C4P4",
+    # "T053_MMW_A1_BLE_C4P5",
+    # "T054_MMW_A1_BLE_C4P6",
+    # "T055_MMW_A1_BLE_C3P5",
+    # "T056_MMW_A1_BLE_C3P4",
+    # "T057_MMW_A1_BLE_C3P3",
+    # "T058_MMW_A1_BLE_C3P2",
+    # "T059_MMW_A1_BLE_C4P1",
+    # "T060_MMW_A1_BLE_C1P5"
 ]
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
@@ -68,8 +74,8 @@ EXPERIMENT_POINTS = {
 }
 
 # Radar origin
-# radar_placement = np.array([0.995, -7.88, 1.78])
-radar_placement = np.array([0.98, -4.5, 1.78])
+radar_placement = np.array([0.995, -7.88, 1.70])
+# radar_placement = np.array([0.98, -4.5, 1.78])
 
 
 # --- STEP 1: SENSOR FUSION ---
@@ -82,7 +88,7 @@ def createTimeToDt(row):
         raise e
 
 def fix_x_axis(row):
-    return [row['x_ble'] * -1, row['y_ble'] * -1]
+    return [row['x_ble'] * -1, row['y_ble'] * -1, row['x_ble_filter'] * -1, row['y_ble_filter'] * -1]
 
 
 def fuse_datasets():
@@ -115,8 +121,8 @@ def fuse_datasets():
             ble_data["create_time"], format="%Y-%m-%d %H:%M:%S"
         )
         # rename x,y,z columns to x_ble, y_ble, z_ble
-        ble_data.rename(columns={"x": "x_ble", "y": "y_ble", "z": "z_ble"}, inplace=True)
-        ble_data[["x_ble", "y_ble"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
+        ble_data.rename(columns={"x": "x_ble", "y": "y_ble", "x_filter": "x_ble_filter", "y_filter": "y_ble_filter", "z": "z_ble"}, inplace=True)
+        ble_data[["x_ble", "y_ble", "x_ble_filter", "y_ble_filter"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
 
         fusion_data = pd.merge(
             ble_data, all_mmw_data, left_on="create_time", right_on="timestamp", how="inner"
@@ -134,6 +140,7 @@ def fuse_datasets():
 
     final_fused_dataset = pd.concat(all_fused_data, ignore_index=True)
     final_fused_dataset['ble_xyz'] = final_fused_dataset.apply(lambda row: (row["x_ble"], row["y_ble"], 1.78), axis=1)
+    final_fused_dataset['ble_xyz_filter'] = final_fused_dataset.apply(lambda row: (row["x_ble_filter"], row["y_ble_filter"], 1.78), axis=1)
     final_fused_dataset.to_csv(FINAL_MERGED_FILENAME, index=False)
     print(f"Final merged dataset saved as {FINAL_MERGED_FILENAME}")
     return final_fused_dataset
@@ -186,8 +193,6 @@ def process_centroids(fusion_data):
     df['velocity'] = df['velocity'].apply(eval)
 
     df[['x', 'y', 'z']] = df.apply(transform_coordinates, axis=1, result_type='expand')
-    # drop static points with velocity 0
-    df[['x', 'y', 'z', 'velocity']] = df.apply(drop_static_points, axis=1, result_type='expand')
     #drop rows where x,y,z are empty lists
     df = df[df['x'].apply(lambda x: len(x) > 0) & df['y'].apply(lambda y: len(y) > 0) & df['z'].apply(lambda z: len(z) > 0)]
     df['centroid_xyz'] = df.apply(calculate_centroid, axis=1)

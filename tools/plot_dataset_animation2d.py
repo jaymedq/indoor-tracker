@@ -7,8 +7,8 @@ from matplotlib.patches import Wedge
 from calculate_mse_mae_rmse import calculate_mse_mae_rmse
 
 # Radar parameters
-radar_placement = np.array([0.98, -4.5])  # only X, Y for 2D
-# radar_placement = np.array([0.995, -7.88])
+# radar_placement = np.array([0.98, -4.5])  # only X, Y for 2D
+radar_placement = np.array([0.995, -7.88])
 radar_facing_angle = 0  # facing right along +X axis (0 degrees)
 radar_fov = 120  # total degrees
 fov_radius = 10  # how far to show FOV (adjust as needed)
