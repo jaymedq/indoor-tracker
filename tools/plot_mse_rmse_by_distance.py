@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mse
+from constants import RADAR_PLACEMENT
 
 # Load dataset
 data = pd.read_csv("fused_dataset.csv", sep=';')
@@ -13,12 +14,8 @@ data['sensor_fused_xyz'] = data['sensor_fused_xyz'].apply(eval)
 data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
-# Radar origin
-radar_placement = np.array([0.995, -7.825, 1.70])
-# radar_placement = np.array([0.98, -4.5, 1.78])
-
 def calculate_distance(row):
-    return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)
+    return np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT)
 
 def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))

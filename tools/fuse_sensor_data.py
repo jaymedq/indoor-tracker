@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from constants import RADAR_PLACEMENT
 
 def track_to_track_fusion(mean1, cov1, mean2, cov2):
     """
@@ -52,12 +53,8 @@ def fuse_sensor_data(row, mmw_cov, ble_cov):
 
     return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[1][1], mean_ble[0], mean_ble[1], 1.78, mean_mmwave[0], mean_mmwave[1], 1.78
 
-# Radar origin
-radar_placement = np.array([0.995, -7.825, 1.70])
-# radar_placement = np.array([0.98, -4.5, 1.78])
-
 def calculate_distance(row):
-    return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)
+    return np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT)
 
 # Append the fused data to the dataframe.
 df['distance'] = df.apply(calculate_distance, axis=1)

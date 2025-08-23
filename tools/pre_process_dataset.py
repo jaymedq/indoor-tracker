@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pykalman import KalmanFilter
 from sklearn.model_selection import ParameterGrid
+from constants import RADAR_PLACEMENT
 
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
@@ -16,10 +17,10 @@ TEST_NAMES = [
     "T032_MMW_A1_BLE_C3P4",
     "T033_MMW_A1_BLE_C3P5",
     "T034_MMW_A1_BLE_C4PA",
-    # "T035_MMW_A1_BLE_CVP1",
-    # "T036_MMW_A1_BLE_CVP2",
-    # "T037_MMW_A1_BLE_CVP3",
-    # "T038_MMW_A1_BLE_CVP4",
+    "T035_MMW_A1_BLE_CVP1",
+    "T036_MMW_A1_BLE_CVP2",
+    "T037_MMW_A1_BLE_CVP3",
+    "T038_MMW_A1_BLE_CVP4",
     # "T038_MMW_A1_BLE_CVP5",
     # "T040_MMW_A1_BLE_C4PV",
     # "T047_MMW_A1_BLE_C2P1",
@@ -72,11 +73,6 @@ EXPERIMENT_POINTS = {
     "C4PV": [ 7.1, -7.165, 1.78],
     "PORTA": [ 8.61, -7.473, 1.78]
 }
-
-# Radar origin
-radar_placement = np.array([0.995, -7.88, 1.70])
-# radar_placement = np.array([0.98, -4.5, 1.78])
-
 
 # --- STEP 1: SENSOR FUSION ---
 def createTimeToDt(row):
@@ -131,7 +127,7 @@ def fuse_datasets():
         for point in EXPERIMENT_POINTS.keys():
             if f"BLE_{point}" in ble_file:
                 fusion_data["real_xyz"] = [EXPERIMENT_POINTS[point]] * len(fusion_data)
-                fusion_data["distance"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - radar_placement)
+                fusion_data["distance"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - RADAR_PLACEMENT)
 
         BLE_MMWAVE_FUSION_FILENAME = f"{ble_file}_mmwave_fusion.csv"
         fusion_data.to_csv(BLE_MMWAVE_FUSION_FILENAME, index=False)
@@ -149,9 +145,9 @@ def fuse_datasets():
 # --- STEP 2: COORDINATE TRANSFORMATION & CENTROID CALCULATION ---
 def transform_coordinates(row):
     transformed = np.array([
-        radar_placement[0] + row['x'],  # Add radar x
-        radar_placement[1] - row['y'],  # Subtract radar y
-        radar_placement[2] + row['z']   # Add radar z
+        RADAR_PLACEMENT[0] + row['x'],  # Add radar x
+        RADAR_PLACEMENT[1] - row['y'],  # Subtract radar y
+        RADAR_PLACEMENT[2] + row['z']   # Add radar z
     ])
     return [transformed[0].tolist(), transformed[1].tolist(), transformed[2].tolist()]
 

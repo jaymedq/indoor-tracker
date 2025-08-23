@@ -3,18 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib.patches import Wedge
+from constants import RADAR_PLACEMENT
 
 from calculate_mse_mae_rmse import calculate_mse_mae_rmse
 
-# Radar parameters
-# radar_placement = np.array([0.98, -4.5])  # only X, Y for 2D
-radar_placement = np.array([0.995, -7.88])
 radar_facing_angle = 0  # facing right along +X axis (0 degrees)
 radar_fov = 120  # total degrees
 fov_radius = 10  # how far to show FOV (adjust as needed)
 
 # Load data
-data = pd.read_csv("fused_dataset.csv", sep=";")
+data = pd.read_csv("dl_fused_dataset.csv", sep=";")
 data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 
 # Ensure stringified lists are parsed correctly
@@ -47,7 +45,7 @@ def plot_radar_fov(ax):
     theta2 = radar_facing_angle + radar_fov / 2
 
     wedge = Wedge(
-        center=(radar_placement[0], radar_placement[1]),
+        center=(RADAR_PLACEMENT[0], RADAR_PLACEMENT[1]),
         r=fov_radius,
         theta1=theta1,
         theta2=theta2,
@@ -59,7 +57,7 @@ def plot_radar_fov(ax):
     ax.add_patch(wedge)
 
     # Also plot radar position
-    ax.scatter(radar_placement[0], radar_placement[1], c="k", marker="x", s=80, label="Radar")
+    ax.scatter(RADAR_PLACEMENT[0], RADAR_PLACEMENT[1], c="k", marker="x", s=80, label="Radar")
 
 def update(frame):
     ax.clear()
