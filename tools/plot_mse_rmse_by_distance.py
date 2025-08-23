@@ -14,8 +14,8 @@ data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
 # Radar origin
-# radar_placement = np.array([0.995, -7.825, 1.70])
-radar_placement = np.array([0.98, -4.5, 1.78])
+radar_placement = np.array([0.995, -7.825, 1.70])
+# radar_placement = np.array([0.98, -4.5, 1.78])
 
 def calculate_distance(row):
     return np.linalg.norm(np.array(row["real_xyz"]) - radar_placement)

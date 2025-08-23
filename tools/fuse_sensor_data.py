@@ -1,65 +1,6 @@
 import numpy as np
 import pandas as pd
 
-class KalmanFilter2D:
-    def __init__(self, noise_covariance=None):
-        # State vector [x, y]
-        self.x = np.array([0, 0], dtype=float)
-        
-        # State transition matrix (Assuming static model)
-        self.dt = 1  # Time step
-        self.F = np.eye(2)
-        
-        # Process noise covariance (assumed small)
-        self.Q = np.eye(2) * 0.01
-        
-        # Measurement matrix (Only x and y)
-        self.H = np.eye(2)
-
-        # Measurement noise covariance (Will be updated dynamically)
-        if noise_covariance is not None:
-            self.R = noise_covariance
-        else:
-            # Default
-            self.R = np.eye(2) * 0.1
-
-        # Initial covariance matrix (High uncertainty initially)
-        self.P = np.eye(2) * 1.0
-
-    def predict(self):
-        self.x = np.dot(self.F, self.x)  # State prediction
-        self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q  # Covariance prediction
-
-    def update(self, measurement):
-        """
-        measurement: [x, y]
-        R: 2x2 covariance matrix for measurement
-        """
-        z = np.array(measurement)
-
-        # Innovation
-        y = z - np.dot(self.H, self.x)
-
-        # Calculate measurement noise covariance using the covariance of the measurement noise
-        # self.R = np.array([[xcov,0.0],[0.0,ycov]]) # Update dynamically in future.
-
-        # Innovation covariance
-        S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
-        K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
-
-        # State update
-        self.x = self.x + np.dot(K, y)
-
-        # Covariance update
-        I = np.eye(2)
-        self.P = np.dot((I - np.dot(K, self.H)), self.P)
-
-    def get_state(self):
-        return self.x
-
-    def get_covariance(self):
-        return self.P
-
 def track_to_track_fusion(mean1, cov1, mean2, cov2):
     """
     Fuse two position estimates with covariance weighting.
@@ -89,27 +30,16 @@ df["real_xyz"] = df["real_xyz"].apply(eval)
 fused_values = []
 
 # Process each row (assumed to be sequential in time)
-def fuse_sensor_data(row, kf_mmwave, kf_ble, mmw_cov, ble_cov):
+def fuse_sensor_data(row, mmw_cov, ble_cov):
     # try:
     # Parse the string representations of the measurements
     mm_meas = row["centroid_xyz"]
     ble_meas = row["ble_xyz_filter"]
     if np.nan in mm_meas or np.nan in ble_meas:
         raise ValueError("Invalid measurements")
-    # except Exception as e:
-    #     mm_meas = [0.0, 0.0, 0.0]
-    #     ble_meas = [0.0, 0.0, 0.0]
-
-    # Run Kalman filters
-    kf_mmwave.predict()
-    kf_mmwave.update(mm_meas[:2])
-
-    kf_ble.predict()
-    kf_ble.update(ble_meas[:2])
 
     # Get estimates and covariances
     mean_mmwave = mm_meas[:2]
-
     mean_ble = ble_meas[:2]
 
     # Fuse estimates
@@ -138,29 +68,24 @@ for key, group in grouped_dict.items():
     mmw_y = group['centroid_xyz'].apply(lambda y: y[1])
     mmw_xy_cov = mmw_x.cov(mmw_y)
     mmw_yx_cov = mmw_x.cov(mmw_y)
-    # mmw_cov = np.array([[mmw_x.var(), 0], [0, 15.0]])
-    # ble_xy_cov = group['x_ble_filter'].cov(group['y_ble_filter'])
-    # ble_yx_cov = group['y_ble_filter'].cov(group['x_ble_filter'])
-    # ble_cov = np.array([[5.0, 0], [0, group['y_ble_filter'].var()]])
+
     mmw_cov = np.array([[mmw_x.var(), 0], [0, mmw_y.var()]])
     ble_xy_cov = group['x_ble_filter'].cov(group['y_ble_filter'])
     ble_yx_cov = group['y_ble_filter'].cov(group['x_ble_filter'])
     ble_cov = np.array([[group['x_ble_filter'].var(), 0], [0, group['y_ble_filter'].var()]])
 
-    kf_mmwave = KalmanFilter2D(np.array([[0.1, 0.0], [0, 0.2]]))
-    kf_ble = KalmanFilter2D([[0.01, 0.0], [0.0, 0.5]])
-    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy", "x_ble_kf", "y_ble_kf", "z_ble_kf", "x_mmw_kf", "y_mmw_kf", "z_mmw_kf"]] = group.apply(fuse_sensor_data, kf_mmwave=kf_mmwave, kf_ble=kf_ble, mmw_cov = mmw_cov, ble_cov = ble_cov, axis=1, result_type='expand')
+    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy", "x_ble_ttf", "y_ble_ttf", "z_ble_ttf", "x_mmw_ttf", "y_mmw_ttf", "z_mmw_ttf"]] = group.apply(fuse_sensor_data, mmw_cov = mmw_cov, ble_cov = ble_cov, axis=1, result_type='expand')
     df.loc[group.index, 'sensor_fused_xyz'] = group['sensor_fused_xyz']
     df.loc[group.index, 'cov_xx'] = group['cov_xx']
     df.loc[group.index, 'cov_xy'] = group['cov_xy']
     df.loc[group.index, 'cov_yx'] = group['cov_yx']
     df.loc[group.index, 'cov_yy'] = group['cov_yy']
-    df.loc[group.index, 'x_ble_kf'] = group['x_ble_kf']
-    df.loc[group.index, 'y_ble_kf'] = group['y_ble_kf']
-    df.loc[group.index, 'z_ble_kf'] = group['z_ble_kf']
-    df.loc[group.index, 'x_mmw_kf'] = group['x_mmw_kf']
-    df.loc[group.index, 'y_mmw_kf'] = group['y_mmw_kf']
-    df.loc[group.index, 'z_mmw_kf'] = group['z_mmw_kf']
+    df.loc[group.index, 'x_ble_ttf'] = group['x_ble_ttf']
+    df.loc[group.index, 'y_ble_ttf'] = group['y_ble_ttf']
+    df.loc[group.index, 'z_ble_ttf'] = group['z_ble_ttf']
+    df.loc[group.index, 'x_mmw_ttf'] = group['x_mmw_ttf']
+    df.loc[group.index, 'y_mmw_ttf'] = group['y_mmw_ttf']
+    df.loc[group.index, 'z_mmw_ttf'] = group['z_mmw_ttf']
     # Print the results
     print(f"Distance: {key}")
     print("Fused Position:", df['sensor_fused_xyz'].values)
@@ -171,7 +96,7 @@ for key, group in grouped_dict.items():
 df.to_csv("fused_dataset.csv", sep=';', index=False)
 print("Fused dataset saved to 'fused_dataset.csv'")
 
-# plotting fusion_kf_cov_matrix by distance
+# plotting fusion_ttf_cov_matrix by distance
 import matplotlib.pyplot as plt
 import numpy as np
 

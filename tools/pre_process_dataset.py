@@ -148,11 +148,10 @@ def fuse_datasets():
 
 # --- STEP 2: COORDINATE TRANSFORMATION & CENTROID CALCULATION ---
 def transform_coordinates(row):
-    points = np.array([row['x'], row['y'], row['z']]).T
     transformed = np.array([
-        radar_placement[0] + points[:, 0],  # Add radar x
-        radar_placement[1] - points[:, 1],  # Subtract radar y
-        radar_placement[2] + points[:, 2]   # Add radar z
+        radar_placement[0] + row['x'],  # Add radar x
+        radar_placement[1] - row['y'],  # Subtract radar y
+        radar_placement[2] + row['z']   # Add radar z
     ])
     return [transformed[0].tolist(), transformed[1].tolist(), transformed[2].tolist()]
 
