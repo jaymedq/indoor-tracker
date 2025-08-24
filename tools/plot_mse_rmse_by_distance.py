@@ -38,8 +38,8 @@ def calculate_errors(group):
         'RMSE_BLE': rmse_ble,
         'MSE_MMW': mse_mmw,
         'RMSE_MMW': rmse_mmw,
-        'MSE_TTF_MMW_BLE_Fusion': mse_fusion,
-        'RMSE_TTF_MMW_BLE_Fusion': rmse_fusion,
+        'MSE_Fusion': mse_fusion,
+        'RMSE_Fusion': rmse_fusion,
         'x': real_x,
         'y': real_y
     })
@@ -55,7 +55,7 @@ results.to_csv("error_by_distance.csv", index=False)
 
 # Plotting MSE by Distance
 plt.figure(figsize=(12, 6))
-methods = ['BLE', 'MMW', 'TTF_MMW_BLE_Fusion']
+methods = ['BLE', 'MMW', 'Fusion']
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
     print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
@@ -86,7 +86,7 @@ from scipy.interpolate import griddata
 # --- 3D Surface Plot of RMSE ---
 
 fig = plt.figure(figsize=plt.figaspect(0.5))
-methods = ['BLE', 'MMW', 'TTF_MMW_BLE_Fusion']
+methods = ['BLE', 'MMW', 'Fusion']
 
 results['y'] += np.random.normal(0, 1e-4, len(results['y']))
 

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pykalman import KalmanFilter
 from sklearn.model_selection import ParameterGrid
-from constants import RADAR_PLACEMENT
+from constants import RADAR_PLACEMENT, EXPERIMENT_POINTS
 
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
@@ -17,10 +17,10 @@ TEST_NAMES = [
     "T032_MMW_A1_BLE_C3P4",
     "T033_MMW_A1_BLE_C3P5",
     "T034_MMW_A1_BLE_C4PA",
-    "T035_MMW_A1_BLE_CVP1",
-    "T036_MMW_A1_BLE_CVP2",
-    "T037_MMW_A1_BLE_CVP3",
-    "T038_MMW_A1_BLE_CVP4",
+    # "T035_MMW_A1_BLE_CVP1",
+    # "T036_MMW_A1_BLE_CVP2",
+    # "T037_MMW_A1_BLE_CVP3",
+    # "T038_MMW_A1_BLE_CVP4",
     # "T038_MMW_A1_BLE_CVP5",
     # "T040_MMW_A1_BLE_C4PV",
     # "T047_MMW_A1_BLE_C2P1",
@@ -40,39 +40,6 @@ TEST_NAMES = [
 ]
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
-
-# Experiment points
-EXPERIMENT_POINTS = {
-    "C1P1": [ 1.15 , -0.4, 1.78],
-    "C1P2": [ 2.35 , -0.4, 1.78],
-    "C1P3": [ 3.55 , -0.4, 1.78],
-    "C1P4": [ 4.75 , -0.4, 1.78],
-    "C1P5": [ 5.95 , -0.4, 1.78],
-    "C2P1": [ 1.143, -4.462, 1.78],
-    "C2P2": [ 2.343, -4.462, 1.78],
-    "C2P3": [ 3.543, -4.462, 1.78],
-    "C2P4": [ 4.745, -4.462, 1.78],
-    "C2P5": [ 5.944, -4.462, 1.78],
-    "C3P1": [ 1.102, -6.865, 1.78],
-    "C3P2": [ 2.308, -6.865, 1.78],
-    "C3P3": [ 3.503, -6.865, 1.78],
-    "C3P4": [ 4.7, -6.865, 1.78],
-    "C3P5": [ 5.9, -6.865, 1.78],
-    "C4PA": [ 7.1, -6.865, 1.78],
-    "CVP1": [ 1.102, -7.165, 1.78],
-    "CVP2": [ 2.308, -7.165, 1.78],
-    "CVP3": [ 3.503, -7.165, 1.78],
-    "CVP4": [ 4.7, -7.165, 1.78],
-    "C4P1":	[7.144, -0.863, 1.78],
-    "C4P2":	[7.143, -2.015, 1.78],
-    "C4P3":	[7.1, -3.215, 1.78],
-    "C4P4":	[7.13, -4.462, 1.78],
-    "C4P5":	[7.14, -5.618, 1.78],
-    "C4P6":	[7.1, -6.865, 1.78],
-    "CVP5": [ 5.9, -7.165, 1.78],
-    "C4PV": [ 7.1, -7.165, 1.78],
-    "PORTA": [ 8.61, -7.473, 1.78]
-}
 
 # --- STEP 1: SENSOR FUSION ---
 def createTimeToDt(row):

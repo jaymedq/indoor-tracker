@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib.patches import Wedge
-from constants import RADAR_PLACEMENT
+from constants import RADAR_PLACEMENT, EXPERIMENT_POINTS
 
 from calculate_mse_mae_rmse import calculate_mse_mae_rmse
 
@@ -58,6 +58,17 @@ def plot_radar_fov(ax):
 
     # Also plot radar position
     ax.scatter(RADAR_PLACEMENT[0], RADAR_PLACEMENT[1], c="k", marker="x", s=80, label="Radar")
+
+def plot_experiment_points(ax):
+    for label, coords in EXPERIMENT_POINTS.items():
+        if "V" in label:
+            continue
+        if "ANCHOR" in label:
+            ax.scatter(coords[0], coords[1], c="r", marker="v", s=20)
+            ax.text(coords[0], coords[1], label, fontsize=9, weight='bold', ha='right', va='bottom', color='r')
+        else:
+            ax.scatter(coords[0], coords[1], c="gray", marker=".", s=20)
+            ax.text(coords[0], coords[1], label, fontsize=9, weight='bold', ha='right', va='bottom', color='gray')
 
 def update(frame):
     ax.clear()
@@ -115,6 +126,8 @@ def update(frame):
         trajectories["ble"]["x"].append(x_ble)
         trajectories["ble"]["y"].append(y_ble)
         # ax.plot(trajectories["ble"]["x"], trajectories["ble"]["y"], "m--", alpha=0.4)
+    
+    plot_experiment_points(ax)
 
     # Set limits
     ax.set_xlim([0, 10])
