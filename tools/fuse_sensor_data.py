@@ -51,7 +51,7 @@ def fuse_sensor_data(row, mmw_cov, ble_cov):
     print("Fused Position:", fused_position)
     print("Fused Covariance:\n", fused_covariance)
 
-    return fused_position, fused_covariance[0][0], fused_covariance[0][1], fused_covariance[1][0], fused_covariance[1][1], mean_ble[0], mean_ble[1], 1.78, mean_mmwave[0], mean_mmwave[1], 1.78
+    return fused_position, fused_covariance
 
 def calculate_distance(row):
     return np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT)
@@ -71,22 +71,13 @@ for key, group in grouped_dict.items():
     ble_yx_cov = group['y_ble_filter'].cov(group['x_ble_filter'])
     ble_cov = np.array([[group['x_ble_filter'].var(), 0], [0, group['y_ble_filter'].var()]])
 
-    group[["sensor_fused_xyz", "cov_xx", "cov_xy", "cov_yx", "cov_yy", "x_ble_ttf", "y_ble_ttf", "z_ble_ttf", "x_mmw_ttf", "y_mmw_ttf", "z_mmw_ttf"]] = group.apply(fuse_sensor_data, mmw_cov = mmw_cov, ble_cov = ble_cov, axis=1, result_type='expand')
+    group[["sensor_fused_xyz", "sensor_fused_cov"]] = group.apply(fuse_sensor_data, mmw_cov = mmw_cov, ble_cov = ble_cov, axis=1, result_type='expand')
     df.loc[group.index, 'sensor_fused_xyz'] = group['sensor_fused_xyz']
-    df.loc[group.index, 'cov_xx'] = group['cov_xx']
-    df.loc[group.index, 'cov_xy'] = group['cov_xy']
-    df.loc[group.index, 'cov_yx'] = group['cov_yx']
-    df.loc[group.index, 'cov_yy'] = group['cov_yy']
-    df.loc[group.index, 'x_ble_ttf'] = group['x_ble_ttf']
-    df.loc[group.index, 'y_ble_ttf'] = group['y_ble_ttf']
-    df.loc[group.index, 'z_ble_ttf'] = group['z_ble_ttf']
-    df.loc[group.index, 'x_mmw_ttf'] = group['x_mmw_ttf']
-    df.loc[group.index, 'y_mmw_ttf'] = group['y_mmw_ttf']
-    df.loc[group.index, 'z_mmw_ttf'] = group['z_mmw_ttf']
+    df.loc[group.index, 'sensor_fused_cov'] = group['sensor_fused_cov']
     # Print the results
     print(f"Distance: {key}")
     print("Fused Position:", df['sensor_fused_xyz'].values)
-    print("Covariance Matrix:\n", group[['cov_xx', 'cov_xy', 'cov_yx', 'cov_yy']].values)
+    print("Covariance Matrix:\n", group[['sensor_fused_cov']].values)
     print("===================================")
 
 # Save the updated dataframe to a new CSV file.
@@ -100,9 +91,9 @@ import numpy as np
 # Group by discrete distance and timestamp and plot covariance
 def plot_covariance_by_distance(df, arg1):
     plt.figure()
-    plt.plot(df[arg1], df["cov_xx"], marker='o', label='cov_xx', alpha=0.5)
-    plt.plot(df[arg1], df["cov_xy"], marker='*', label='cov_xy', alpha=0.5)
-    plt.plot(df[arg1], df["cov_yy"], marker='h', label='cov_yy', alpha=0.5)
+    plt.plot(df[arg1], df["sensor_fused_cov"].apply(lambda x: x[0,0]), marker='o', label='cov_xx', alpha=0.5)
+    plt.plot(df[arg1], df["sensor_fused_cov"].apply(lambda x: x[0,1]), marker='*', label='cov_xy', alpha=0.5)
+    plt.plot(df[arg1], df["sensor_fused_cov"].apply(lambda x: x[1,1]), marker='h', label='cov_yy', alpha=0.5)
     plt.title(f"Covariance over {arg1}")
     plt.xlabel(f"{arg1}")
     plt.ylabel("Covariance Component")
