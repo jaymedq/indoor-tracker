@@ -58,8 +58,8 @@ plt.figure(figsize=(12, 6))
 methods = ['BLE', 'MMW', 'Fusion']
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
-    print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
-    print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
+    # print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
+    # print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
 
 plt.title('Mean Squared Error (MSE) by Distance')
 plt.xlabel('Distance')
@@ -72,6 +72,12 @@ plt.show()
 plt.figure(figsize=(12, 6))
 for method in methods:
     plt.plot(results['distance'], results[f'RMSE_{method}'], marker='o', label=f'{method} RMSE')
+    print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
+    print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
+print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
+print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
+print(f"Percentage improvement in RMSE from BLE: {((results['RMSE_BLE'].mean() / results['RMSE_Fusion'].mean()) - 1)*100}%")
+print(f"Percentage improvement in RMSE from MMW: {((results['RMSE_MMW'].mean() / results['RMSE_Fusion'].mean()) - 1)*100}%")
 
 plt.title('Root Mean Squared Error (RMSE) by Distance')
 plt.xlabel('Distance')
@@ -88,6 +94,7 @@ from scipy.interpolate import griddata
 fig = plt.figure(figsize=plt.figaspect(0.5))
 methods = ['BLE', 'MMW', 'Fusion']
 
+# Add small noise to y to avoid singular matrix error in griddata
 results['y'] += np.random.normal(0, 1e-4, len(results['y']))
 
 # Prepare data for interpolation
