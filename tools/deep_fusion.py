@@ -193,7 +193,7 @@ def predict_and_save(csv_path, model_path, out_csv='dl_fused_output.csv', device
 
     df['dl_fused_xy'] = fused_xy
     df['dl_fused_var_xy'] = fused_unc
-    df['sensor_fused_xyz'] = df['dl_fused_xy'].apply(lambda p: [p[0], p[1], 1.78] if not any(np.isnan(p)) else [np.nan,np.nan,np.nan])
+    df['dl_sensor_fused_xyz'] = df['dl_fused_xy'].apply(lambda p: [p[0], p[1], 1.78] if not any(np.isnan(p)) else [np.nan,np.nan,np.nan])
     df.to_csv(out_csv, sep=';', index=False)
     print("Wrote:", out_csv)
     return df
@@ -202,8 +202,27 @@ def predict_and_save(csv_path, model_path, out_csv='dl_fused_output.csv', device
 # CLI-ish usage
 # -------------------------
 if __name__ == "__main__":
-    CSV = "FUSAO_PROCESSADA.csv"
+    CSV = "fused_dataset.csv"
+    #split train and test
+    full_dataset = pd.read_csv(CSV, sep=';')
+    full_dataset.head(0).to_csv("dl_train_dataset.csv", sep=';', index=False)
+    full_dataset.head(0).to_csv("dl_test_dataset.csv", sep=';', index=False)
+    i = 0
+    for key, group in full_dataset.groupby('distance'):
+        #split 80% train, 20% test
+        # if i in (1,3,5) == 0:
+        #     train_size = 0
+        # else:
+        #     train_size = int(0.8 * len(group))
+        train_size = int(0.8 * len(group))
+        train_group = group.iloc[:train_size]
+        test_group = group.iloc[train_size:]
+        #add header only for first write
+        train_group.to_csv("dl_train_dataset.csv", mode='a', header=(key==0), sep=';', index=False)
+        test_group.to_csv("dl_test_dataset.csv", mode='a', header=(key==0), sep=';', index=False)
+        i += 1
+
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    best_model, ds = train_model(CSV, out_dir='dl_out', device=device,
-                                 hidden=128, batch_size=64, lr=1e-3, epochs=80, val_split=0.12)
-    predict_and_save(CSV, "dl_out\\best.pth", out_csv='dl_fused_dataset.csv', device=device)
+    best_model, ds = train_model("dl_train_dataset.csv", out_dir='dl_out', device=device,
+                                 hidden=128, batch_size=64, lr=1e-3, epochs=160, val_split=0.12)
+    predict_and_save("dl_test_dataset.csv", "dl_out\\best.pth", out_csv='dl_fused_output.csv', device=device)

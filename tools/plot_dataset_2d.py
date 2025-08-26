@@ -12,7 +12,7 @@ radar_fov = 120  # total degrees
 fov_radius = 10  # how far to show FOV (adjust as needed)
 
 # Load data
-data = pd.read_csv("fused_dataset.csv", sep=";")
+data = pd.read_csv("dl_fused_output.csv", sep=";")
 data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 
 # Ensure stringified lists are parsed correctly
@@ -26,6 +26,8 @@ if "real_xyz" in data.columns:
     data["real_xyz"] = data["real_xyz"].apply(eval)
 if "sensor_fused_xyz" in data.columns:
     data["sensor_fused_xyz"] = data["sensor_fused_xyz"].apply(eval)
+if "dl_sensor_fused_xyz" in data.columns:
+    data["dl_sensor_fused_xyz"] = data["dl_sensor_fused_xyz"].apply(eval)
 
 errors = calculate_mse_mae_rmse(data)
 
@@ -44,6 +46,7 @@ def plot_colored_points(ax, x, y, times, cmap, label, size=10, marker='.'):
 trajectories = {
     "centroid": {"x": [], "y": []},
     "sensor_fused": {"x": [], "y": []},
+    "dl_sensor_fused": {"x": [], "y": []},
     "real": {"x": [], "y": []},
     "ble": {"x": [], "y": []},
 }
@@ -85,6 +88,9 @@ for _, row in data.iterrows():
     if "sensor_fused_xyz" in row and row["sensor_fused_xyz"]:
         trajectories["sensor_fused"]["x"].append(row["sensor_fused_xyz"][0])
         trajectories["sensor_fused"]["y"].append(row["sensor_fused_xyz"][1])
+    if "dl_sensor_fused_xyz" in row and row["dl_sensor_fused_xyz"]:
+        trajectories["dl_sensor_fused"]["x"].append(row["dl_sensor_fused_xyz"][0])
+        trajectories["dl_sensor_fused"]["y"].append(row["dl_sensor_fused_xyz"][1])
     if "real_xyz" in row and row["real_xyz"]:
         trajectories["real"]["x"].append(row["real_xyz"][0])
         trajectories["real"]["y"].append(row["real_xyz"][1])
@@ -103,7 +109,12 @@ times = data["timestamp"].astype(np.int64) // 10**9  # convert to seconds
 if trajectories["sensor_fused"]["x"]:
     plot_colored_points(ax, trajectories["sensor_fused"]["x"], trajectories["sensor_fused"]["y"],
                         times[:len(trajectories["sensor_fused"]["x"])],
-                        plt.cm.Greens, "Sensor Fused", size=12, marker='D')
+                        plt.cm.Greens, "TTFFusion", size=12, marker='D')
+
+if trajectories["dl_sensor_fused"]["x"]:
+    plot_colored_points(ax, trajectories["dl_sensor_fused"]["x"], trajectories["dl_sensor_fused"]["y"],
+                        times[:len(trajectories["dl_sensor_fused"]["x"])],
+                        plt.cm.Reds, "DLFusion", size=12, marker='D')
     
 if trajectories["centroid"]["x"]:
     plot_colored_points(ax, trajectories["centroid"]["x"], trajectories["centroid"]["y"],
@@ -129,7 +140,8 @@ ax.set_ylim([-10, 0])
 legend_handles = [
     plt.Line2D([0], [0], marker='.', color='w', markerfacecolor="purple", markersize=8, label="mmWave"),
     plt.Line2D([0], [0], marker='.', color='w', markerfacecolor="blue", markersize=8, label="BLE"),
-    plt.Line2D([0], [0], marker='D', color='w', markerfacecolor="limegreen", markersize=8, label="Sensor Fusion"),
+    plt.Line2D([0], [0], marker='D', color='w', markerfacecolor="limegreen", markersize=8, label="TTFFusion"),
+    plt.Line2D([0], [0], marker='D', color='w', markerfacecolor="red", markersize=8, label="DLFusion"),
     plt.Line2D([0], [0], marker='s', color='w', markerfacecolor="black", markersize=8, label="Ground Truth"),
     plt.Line2D([0], [0], marker='<', color='w', markerfacecolor="cyan", markersize=8, label="Radar FOV"),
     plt.Line2D([0], [0], marker='X', color='w', markerfacecolor="black", markersize=8, label="Radar Position"),
