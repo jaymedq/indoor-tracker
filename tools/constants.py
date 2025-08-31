@@ -1,6 +1,6 @@
 import numpy as np
-# RADAR_PLACEMENT = np.array([0.995, -7.88, 1.70])  # Radar position in room coordinates
-RADAR_PLACEMENT = np.array([0.98, -4.5, 1.78])  # Alternative radar position
+RADAR_PLACEMENT = np.array([0.995, -7.88, 1.70])  # Radar position in room coordinates
+# RADAR_PLACEMENT = np.array([0.98, -4.5, 1.78])  # Alternative radar position
 
 # Experiment points
 EXPERIMENT_POINTS = {
@@ -19,6 +19,7 @@ EXPERIMENT_POINTS = {
     "C3P3": [ 3.503, -6.865, 1.78],
     "C3P4": [ 4.7, -6.865, 1.78],
     "C3P5": [ 5.9, -6.865, 1.78],
+    "C3P6": [ 7.1, -6.865, 1.78],
     "C4PA": [ 7.1, -6.865, 1.78],
     "CVP1": [ 1.102, -7.165, 1.78],
     "CVP2": [ 2.308, -7.165, 1.78],
@@ -38,3 +39,7 @@ EXPERIMENT_POINTS = {
     "ANCHOR3" :  [5.717, -7.846, 2.41],
     "ANCHOR4" :  [3.524,  -4.629, 2.416],
 }
+
+RADAR_FACING_ANGLE = 0  # facing right along +X axis (0 degrees)
+RADAR_FOV = 120  # total degrees
+FOV_RADIUS = 10  # how far to show FOV (adjust as needed)

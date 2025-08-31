@@ -4,18 +4,19 @@ import matplotlib.pyplot as plt
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mae
 
 # Load dataset
-data = pd.read_csv("FUSAO_PROCESSADA.csv",sep=';')
+data = pd.read_csv("fused_dataset.csv",sep=';')
 
 # Ensure stringified lists are parsed correctly
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
+data["sensor_fused_xyz"] = data["sensor_fused_xyz"].apply(eval)
 
 # Calculate distance and error metrics
 def calculate_distance_and_error(row):
     real = np.array(row["real_xyz"])
     centroid = np.array(row["centroid_xyz"])
-    triang = np.array([row["X_est_TRIANG_KF"], row["Y_est_TRIANG_KF"], 1.78])
-    fusion = np.array([row["X_fused"], row["X_fused"], 1.78])
+    triang = np.array([row["x_ble"], row["y_ble"], 1.78])
+    fusion_points = np.vstack(row['sensor_fused_xyz'])
 
     # Calculate distance to real point
     distance = np.linalg.norm(real)
@@ -23,7 +24,7 @@ def calculate_distance_and_error(row):
     # Calculate RMSE
     error_centroid = calculate_rmse(real, centroid)
     error_triang = calculate_rmse(real, triang)
-    error_fusion = calculate_rmse(real, fusion)
+    error_fusion = calculate_rmse(real, fusion_points)
 
     return pd.Series([distance, error_centroid, error_triang, error_fusion],
                      index=["distance", "error_centroid", "error_triang", "error_fusion"])
