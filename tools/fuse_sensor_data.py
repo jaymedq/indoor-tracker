@@ -100,5 +100,5 @@ def plot_covariance_by_distance(df, arg1):
     plt.legend()
     plt.show()
 
-plot_covariance_by_distance(df, 'timestamp')
-plot_covariance_by_distance(df, 'distance')
+# plot_covariance_by_distance(df, 'timestamp')
+# plot_covariance_by_distance(df, 'distance')
