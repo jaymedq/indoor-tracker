@@ -26,6 +26,7 @@ def calculate_errors(group):
     ble_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
     mmw_points = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
+    filter_replace_rate = group['filter_replace_rate'].values[-1]
     
     real_x = real_points[0, 0]
     real_y = real_points[0, 1]
@@ -44,13 +45,14 @@ def calculate_errors(group):
         'MSE_Fusion': calculate_mse(real_points, fusion_points),
         'RMSE_Fusion': calculate_rmse(real_points, fusion_points),
         'x': real_x,
-        'y': real_y
+        'y': real_y,
+        'filter_replace_rate': filter_replace_rate
     })
 
 def main():
     """Main function to run the threshold experiment."""
     python_executable = sys.executable
-    thresholds = np.arange(0.0, 1.5, 0.05)
+    thresholds = np.arange(0.05, 1.5, 0.05)
     all_results = []
 
     # These are the files processed by the original .bat file
@@ -123,19 +125,19 @@ def main():
             print("Could not find fused_dataset.csv. Skipping RMSE calculation for this threshold.")
         except Exception as e:
             print(f"An error occurred during RMSE calculation: {e}")
+            print("Reverting changes...")
+            run_command(["git", "checkout", "--", "Results/"])
+            raise e
 
         # 4. Revert changes
         print("Reverting changes...")
         run_command(["git", "checkout", "--", "Results/"])
-        for f in ["fused_dataset.csv", "error_by_distance.csv", "ble_mmwave_fusion_all.csv"]:
-             if os.path.exists(f):
-                os.remove(f)
 
     # 5. Combine and save all results
     print("Saving combined results...")
-    if True:
-        final_results = pd.concat(all_results, ignore_index=True)
-        final_results.to_csv("threshold_experiment_results.csv", index=False)
+    if all_results:
+        # final_results = pd.concat(all_results, ignore_index=True)
+        # final_results.to_csv("threshold_experiment_results.csv", index=False)
         final_results = pd.read_csv("threshold_experiment_results.csv")
 
         # 6. Plot errors by distance
@@ -144,12 +146,17 @@ def main():
         colors = plt.cm.jet(np.linspace(0, 1, len(thresholds)))
         
         distance_data = final_results[final_results['distance'] == final_results['distance'][2]]
-        plt.plot(distance_data['threshold'], distance_data['RMSE_Fusion'], marker='o', linestyle='-')
+        fig, ax1 = plt.subplots()
+        ax2 = ax1.twinx()
 
-        plt.title(f"RMSE (Fusion) by Threshold for Distance = {final_results['distance'][2]}")
-        plt.xlabel('Threshold (m)')
-        plt.ylabel('RMSE (m)')
-        plt.legend()
+        ax2.plot(distance_data['threshold']*100, distance_data['filter_replace_rate'], 'r-')
+        ax1.plot(distance_data['threshold']*100, distance_data['RMSE_Fusion'], 'b-')
+
+        # plt.title(f"RMSE (Fusion) by Threshold for Distance = {final_results['distance'][2]}")
+        ax1.set_xlabel('Threshold (cm)', fontsize=14)
+        ax1.set_ylabel('RMSE (m)', color='b', fontsize=14)
+        ax2.set_ylabel('Discard rate (%)', color='r', fontsize=14)
+        # fig.legend(loc="upper right", bbox_to_anchor=(0.9, 0.8))
         plt.grid(True)
         plt.savefig("threshold_errors_by_distance.png")
         # plt.show() # Commented out to prevent blocking in a non-interactive environment

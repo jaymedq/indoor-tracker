@@ -66,6 +66,9 @@ def filter_dataset(input_file, columns, threshold, output):
 
     print(f"\nAdded filtered columns with '_filter' suffix. Replaced {total_replaced} outlier values.")
 
+    #Add replace rate to dataset
+    df_filtered['filter_replace_rate'] = round(((total_replaced/len(df_original))*100),2)
+
     # Save the filtered data
     if output:
         df_filtered.to_csv(output, index=False)
