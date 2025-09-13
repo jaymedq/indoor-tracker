@@ -11,6 +11,7 @@ data = pd.read_csv("fused_dataset.csv", sep=';')
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
 data['sensor_fused_xyz'] = data['sensor_fused_xyz'].apply(eval)
+data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(eval)
 data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
@@ -21,17 +22,20 @@ def calculate_errors(group):
     real_points = np.vstack(group['real_xyz'].apply(np.array))
     ble_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
     mmw = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
-    fusion_points = np.vstack(group['sensor_fused_xyz'].apply(np.array))
+    fusion_points = np.vstack(group['sensor_fused_xyz_filter'].apply(np.array))
+    fusion_points_without_sliding_window_median_filter = np.vstack(group['sensor_fused_xyz'].apply(np.array))
     real_x = real_points[:, 0][0]
     real_y = real_points[0, 1]
 
     mse_ble = calculate_mse(real_points, ble_points)
     mse_mmw = calculate_mse(real_points, mmw)
     mse_fusion = calculate_mse(real_points, fusion_points)
+    mse_fusion_without_sliding_window_median_filter = calculate_mse(real_points, fusion_points_without_sliding_window_median_filter)
 
     rmse_ble = calculate_rmse(real_points, ble_points)
     rmse_mmw = calculate_rmse(real_points, mmw)
     rmse_fusion = calculate_rmse(real_points, fusion_points)
+    rmse_fusion_without_sliding_window_median_filter = calculate_rmse(real_points, fusion_points_without_sliding_window_median_filter)
 
     return pd.Series({
         'MSE_BLE': mse_ble,
@@ -40,6 +44,8 @@ def calculate_errors(group):
         'RMSE_MMW': rmse_mmw,
         'MSE_Fusion': mse_fusion,
         'RMSE_Fusion': rmse_fusion,
+        'MSE_FusionWOSWMF': mse_fusion_without_sliding_window_median_filter,
+        'RMSE_FusionWOSWMF': rmse_fusion_without_sliding_window_median_filter,
         'x': real_x,
         'y': real_y
     })
@@ -54,24 +60,36 @@ results = data.groupby('distance').apply(calculate_errors).reset_index()
 results.to_csv("error_by_distance.csv", index=False)
 
 # Plotting MSE by Distance
-plt.figure(figsize=(12, 6))
-methods = ['BLE', 'MMW', 'Fusion']
+plt.figure(figsize=(15, 8))
+methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion']
+method_label_map = {
+    "BLE": "BLE only",
+    "MMW": "mmWave only",
+    "FusionWOSWMF": "T2TF without SWMF",
+    "Fusion": "Proposed T2TF scheme"
+}
+method_marker_map = {
+    "BLE": 'd',
+    "MMW": '*',
+    "FusionWOSWMF": 'x',
+    "Fusion": 'o',
+}
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
     # print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
     # print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
 
-plt.title('Mean Squared Error (MSE) by Distance')
-plt.xlabel('Distance')
-plt.ylabel('MSE')
+# plt.title('Mean Squared Error (MSE) by Distance')
+plt.xlabel('Distance', fontsize = 14)
+plt.ylabel('MSE', fontsize=14)
 plt.legend()
 plt.grid(True)
 plt.show()
 
 # Plotting RMSE by Distance
-plt.figure(figsize=(12, 6))
+fig, ax = plt.subplots()
 for method in methods:
-    plt.plot(results['distance'], results[f'RMSE_{method}'], marker='o', label=f'{method} RMSE')
+    ax.plot(results['distance'], results[f'RMSE_{method}'], label=f'{method_label_map.get(method)} RMSE', marker= method_marker_map.get(method))
     print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
     print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
@@ -79,12 +97,14 @@ print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - re
 print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_Fusion'].mean()))*100}%")
 print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_Fusion'].mean()))*100}%")
 
-plt.title('Root Mean Squared Error (RMSE) by Distance')
-plt.xlabel('Distance')
-plt.ylabel('RMSE')
-plt.legend()
-plt.grid(True)
-plt.show()
+# plt.title('Root Mean Squared Error (RMSE) by Distance')
+ax.set_xlabel('Distance [m]', fontsize=14)
+ax.set_ylabel('RMSE [m]', fontsize=14)
+ax.grid(True)
+fig.legend(loc="upper right")
+fig.tight_layout()
+fig.show()
+fig.savefig("Resultado.png")
 
 from matplotlib import cm
 from scipy.interpolate import griddata
@@ -119,9 +139,9 @@ for i, method in enumerate(methods):
 
     # Formatting the plot
     ax.set_title(f'3D Surface of {method} RMSE', fontsize=14, pad=20)
-    ax.set_xlabel('X Position (meters)', fontsize=10, labelpad=10)
-    ax.set_ylabel('Y Position (meters)', fontsize=10, labelpad=10)
-    ax.set_zlabel('RMSE (meters)', fontsize=10, labelpad=10)
+    ax.set_xlabel('X Position (m)', fontsize=10, labelpad=10)
+    ax.set_ylabel('Y Position (m)', fontsize=10, labelpad=10)
+    ax.set_zlabel('RMSE (m)', fontsize=10, labelpad=10)
 
     # Adjust view angle
     ax.view_init(elev=35, azim=-45)

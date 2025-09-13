@@ -25,22 +25,26 @@ def filter_dataset(input_file, columns, threshold, output):
 
         # Create new filtered column
         filtered_col = f"{col}_filter"
-        df_filtered[filtered_col] = df_original[col].copy()
+        df_filtered[filtered_col] = df_filtered[col].copy()
 
         moving_mean = []
         replaced_count = 0
 
-        for idx, val in enumerate(df_original[col]):
-            if pd.isna(val):
-                continue
+        # for idx, val in enumerate(df_filtered[col]):
+        #     if pd.isna(val):
+        #         continue
 
-            deviation = abs(val - mode_bin_center)
-            if deviation > threshold:
-                if moving_mean:  # replace in the new column only
-                    df_filtered.at[idx, filtered_col] = np.mean(moving_mean)
-                    replaced_count += 1
-            else:
-                moving_mean.append(val)
+        #     deviation = abs(val - mode_bin_center)
+        #     if deviation > threshold:
+        #         if moving_mean:  # replace in the new column only
+        #             df_filtered.at[idx, filtered_col] = np.mean(moving_mean)
+        #             replaced_count += 1
+        #     else:
+        #         moving_mean.append(val)
+        deviation = abs(df_filtered[col] - mode_bin_center)
+        mask = deviation <= threshold   # keep only rows within threshold
+        df_filtered = df_filtered[mask]
+        replaced_count = (~mask).sum()  # number of removed rows
 
         total_replaced += replaced_count
 
@@ -64,10 +68,10 @@ def filter_dataset(input_file, columns, threshold, output):
     print(f"Histogram saved to: {output_hist_path}")
     plt.close()
 
-    print(f"\nAdded filtered columns with '_filter' suffix. Replaced {total_replaced} outlier values.")
+    print(f"\nAdded filtered columns with '_filter' suffix. Replaced {total_replaced} outlier values out of {original_count} total ({round(((total_replaced/original_count)*100),2)}%).")
 
     #Add replace rate to dataset
-    df_filtered['filter_replace_rate'] = round(((total_replaced/len(df_original))*100),2)
+    df_filtered['filter_replace_rate'] = round(((total_replaced/original_count)*100),2)
 
     # Save the filtered data
     if output:

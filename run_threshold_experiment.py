@@ -157,15 +157,17 @@ def main():
         ax1.set_ylabel('RMSE (m)', color='b', fontsize=14)
         ax2.set_ylabel('Discard rate (%)', color='r', fontsize=14)
         # fig.legend(loc="upper right", bbox_to_anchor=(0.9, 0.8))
-        plt.grid(True)
-        plt.savefig("threshold_errors_by_distance.png")
+        ax1.grid(True)
+        ax2.grid(True)
+        fig.tight_layout()
+        fig.savefig("RMSE_DiscardRate.png")
         # plt.show() # Commented out to prevent blocking in a non-interactive environment
     else:
         print("No results were generated.")
 
     print("--- Experiment finished ---")
     print("Results can be found in threshold_experiment_results.csv")
-    print("Plot saved to threshold_errors_by_distance.png")
+    print("Plot saved to RMSE_DiscardRate.png")
 
 if __name__ == "__main__":
     main()

@@ -20,7 +20,7 @@ OBSTACLES = [
     },  # sala de reunioes
 ]
 
-POINTS_TO_CONSIDER = ["C3P2", "C3P3", "C3P4", "C3P5", "C3P6"]
+POINTS_TO_CONSIDER = ["P2", "P3", "P4", "P5", "P6"]
 
 def plot_obstacles(ax):
     """Desenha os obstáculos fixos (mesas e bancadas)."""
@@ -40,7 +40,7 @@ def plot_obstacles(ax):
             obs["y"] + obs["h"] / 2,
             obs["name"],
             color="brown",
-            fontsize=6,
+            fontsize=9,
             ha="center",
             va="center",
         )
@@ -91,7 +91,7 @@ def plot_radar_fov(ax, plot_radar_point_value:bool = False):
         label="Radar Position",
     )
     if plot_radar_point_value:
-        ax.text(RADAR_PLACEMENT[0]+0.1, RADAR_PLACEMENT[1]-0.4, f"{RADAR_PLACEMENT}", fontsize=8)
+        ax.text(RADAR_PLACEMENT[0]+0.1, RADAR_PLACEMENT[1]-0.4, f"{RADAR_PLACEMENT[:2]}", fontsize=10)
 
 
 def plot_experiment_points(ax, plot_anchor_position=False):
@@ -118,7 +118,7 @@ def plot_experiment_points(ax, plot_anchor_position=False):
                 color="r",
             )
             if plot_anchor_position:
-                ax.text(coords[0]+0.1, coords[1], f"{coords}", fontsize=8, color="r")
+                ax.text(coords[0]+0.1, coords[1], f"{coords[:2]}", fontsize=10, color="r")
         else:
             ax.text(
                 coords[0],
@@ -135,7 +135,7 @@ def plot_experiment_points(ax, plot_anchor_position=False):
 
 if __name__ == "__main__":
     # Plot static routes
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots()
 
     plot_radar_fov(ax, True)
     plot_obstacles(ax)
@@ -182,10 +182,10 @@ if __name__ == "__main__":
             label="BLE Anchor Position",
         ),
     ]
-    plt.legend(handles=legend_handles, loc="upper right")
+    fig.legend(handles=legend_handles, loc="upper right")
 
-    plt.xlabel("X [m]")
-    plt.ylabel("Y [m]")
-    plt.title("2D Representation of LabSC")
-    plt.savefig("labsc_2d_map.png")
+    ax.set_xlabel("X [m]", fontsize=14)
+    ax.set_ylabel("Y [m]", fontsize=14)
+    fig.savefig("labsc_2d_map.png")
+    fig.tight_layout()
     plt.show()
