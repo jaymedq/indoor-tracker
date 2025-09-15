@@ -4,7 +4,7 @@ import os
 import argparse
 import matplotlib.pyplot as plt
 
-def filter_dataset(input_file, columns, threshold, output):
+def filter_dataset(input_file, columns, threshold, output, window = 7):
     df_original = pd.read_csv(input_file)
     subset = df_original[columns]
     mask_to_drop = subset.isna().any(axis=1)
@@ -33,8 +33,7 @@ def filter_dataset(input_file, columns, threshold, output):
         replace_filtered_col = f'{col}_replace_filter'
         df_filtered[replace_filtered_col] = df_filtered[col].copy()
 
-        moving_mean = []
-        
+        moving_mean = [mode_bin_center]
 
         for index_label, row in df_filtered.iterrows():
             val = row[col] # Get the value for the specific column from the row
@@ -43,20 +42,14 @@ def filter_dataset(input_file, columns, threshold, output):
                 print(f'isna found at index {index_label} : value = {val}')
                 continue
 
-            deviation = abs(val - mode_bin_center)
+            last_n_median = np.median(moving_mean[-window:])
+            deviation = abs(last_n_median - val)
             if deviation > threshold:
-                if moving_mean:
-                    # Use the correct 'index_label' for .loc
-                    df_filtered.loc[index_label, replace_filtered_col] = np.mean(moving_mean)
-                    replaced_indexes.append(index_label)
-                # Use the correct 'index_label' for .loc
+                df_filtered.loc[index_label, replace_filtered_col] = last_n_median
                 df_filtered.loc[index_label, drop_filtered_col] = np.nan
+                replaced_indexes.append(index_label)
             else:
                 moving_mean.append(val)
-        # deviation = abs(df_filtered[col] - mode_bin_center)
-        # mask = deviation <= threshold   # keep only rows within threshold
-        # df_filtered = df_filtered[mask]
-        # replaced_count = (~mask).sum()  # number of removed rows
 
         # Plot before vs after
         bins = np.histogram_bin_edges(values, bins=50)
@@ -97,11 +90,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--input_file", type=str, required=True)
     parser.add_argument("--columns", type=str, nargs='+', required=True)
-    parser.add_argument("--threshold", type=float, default=8.0)
+    parser.add_argument("--threshold", type=float, default=0.2)
+    parser.add_argument("--window", type=int, default=7)
     parser.add_argument("--output", nargs="?", type=str, default="")
     args = parser.parse_args()
 
     if os.path.exists(args.input_file):
         filter_dataset(
-            args.input_file, args.columns, args.threshold, args.output
+            args.input_file, args.columns, args.threshold, args.output, args.window
         )
