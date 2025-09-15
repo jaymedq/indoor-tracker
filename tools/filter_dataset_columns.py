@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 
 def filter_dataset(input_file, columns, threshold, output):
     df_original = pd.read_csv(input_file)
-    df_filtered = df_original.copy()
+    subset = df_original[columns]
+    mask_to_drop = subset.isna().any(axis=1)
+    df_filtered = df_original[~mask_to_drop].copy()
     original_count = len(df_original)
 
     fig, axes = plt.subplots(len(columns), 1, figsize=(10, 5 * len(columns)))
@@ -14,9 +16,10 @@ def filter_dataset(input_file, columns, threshold, output):
         axes = [axes]
 
     total_replaced = 0
+    replaced_indexes = []
 
     for i, col in enumerate(columns):
-        values = df_original[col].dropna()
+        values = df_filtered[col].dropna()
 
         # Histogram for reference
         hist, bin_edges = np.histogram(values, bins=50)
@@ -24,38 +27,47 @@ def filter_dataset(input_file, columns, threshold, output):
         mode_bin_center = (bin_edges[most_frequent_bin_index] + bin_edges[most_frequent_bin_index + 1]) / 2
 
         # Create new filtered column
-        filtered_col = f"{col}_filter"
-        df_filtered[filtered_col] = df_filtered[col].copy()
+        drop_filtered_col = f"{col}_filter"
+        df_filtered[drop_filtered_col] = df_filtered[col].copy()
+        
+        replace_filtered_col = f'{col}_replace_filter'
+        df_filtered[replace_filtered_col] = df_filtered[col].copy()
 
         moving_mean = []
-        replaced_count = 0
+        
 
-        # for idx, val in enumerate(df_filtered[col]):
-        #     if pd.isna(val):
-        #         continue
+        for index_label, row in df_filtered.iterrows():
+            val = row[col] # Get the value for the specific column from the row
 
-        #     deviation = abs(val - mode_bin_center)
-        #     if deviation > threshold:
-        #         if moving_mean:  # replace in the new column only
-        #             df_filtered.at[idx, filtered_col] = np.mean(moving_mean)
-        #             replaced_count += 1
-        #     else:
-        #         moving_mean.append(val)
-        deviation = abs(df_filtered[col] - mode_bin_center)
-        mask = deviation <= threshold   # keep only rows within threshold
-        df_filtered = df_filtered[mask]
-        replaced_count = (~mask).sum()  # number of removed rows
+            if pd.isna(val):
+                print(f'isna found at index {index_label} : value = {val}')
+                continue
 
-        total_replaced += replaced_count
+            deviation = abs(val - mode_bin_center)
+            if deviation > threshold:
+                if moving_mean:
+                    # Use the correct 'index_label' for .loc
+                    df_filtered.loc[index_label, replace_filtered_col] = np.mean(moving_mean)
+                    replaced_indexes.append(index_label)
+                # Use the correct 'index_label' for .loc
+                df_filtered.loc[index_label, drop_filtered_col] = np.nan
+            else:
+                moving_mean.append(val)
+        # deviation = abs(df_filtered[col] - mode_bin_center)
+        # mask = deviation <= threshold   # keep only rows within threshold
+        # df_filtered = df_filtered[mask]
+        # replaced_count = (~mask).sum()  # number of removed rows
 
         # Plot before vs after
         bins = np.histogram_bin_edges(values, bins=50)
         axes[i].hist(values, bins=bins, color='skyblue', alpha=0.6, label='Original', zorder=1)
-        axes[i].hist(df_filtered[filtered_col].dropna(), bins=bins, color='lightcoral', alpha=0.6, label='Filtered', zorder=2)
+        axes[i].hist(df_filtered[replace_filtered_col].dropna(), bins=bins, color='lightcoral', alpha=0.6, label='Filtered', zorder=2)
         axes[i].set_title(f'Histogram for {col}')
         axes[i].set_xlabel(col)
         axes[i].set_ylabel('Frequency')
         axes[i].legend()
+    
+    total_replaced = len(set(replaced_indexes))
 
     fig.suptitle(f'TH: {threshold}, input: {os.path.basename(input_file)}', fontsize=16)
     plt.tight_layout()
