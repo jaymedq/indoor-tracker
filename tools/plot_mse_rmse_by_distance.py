@@ -72,7 +72,7 @@ results = data.groupby('distance').apply(calculate_errors).reset_index()
 results.to_csv("error_by_distance.csv", index=False)
 
 # Plotting MSE by Distance
-plt.figure(figsize=(15, 8))
+plt.figure(figsize=(16, 9))
 methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion']
 method_label_map = {
     "BLE": "BLE only",
@@ -87,7 +87,7 @@ method_marker_map = {
     "Fusion": 'o',
 }
 for method in methods:
-    plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method} MSE')
+    plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method}')
     # print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
     # print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
 
@@ -99,9 +99,9 @@ plt.grid(True)
 plt.show()
 
 # Plotting RMSE by Distance
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(4.5,3.5))
 for method in methods:
-    ax.plot(results['distance'], results[f'RMSE_{method}'], label=f'{method_label_map.get(method)} RMSE', marker= method_marker_map.get(method))
+    ax.plot(results['distance'], results[f'RMSE_{method}'], label=f'{method_label_map.get(method)}', marker= method_marker_map.get(method))
     print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
     print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
@@ -113,9 +113,10 @@ print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean
 ax.set_xlabel('Distance [m]', fontsize=14)
 ax.set_ylabel('RMSE [m]', fontsize=14)
 ax.grid(True)
-fig.legend(loc="upper right")
+fig.legend(loc="upper left")
 fig.tight_layout()
 fig.show()
+fig.savefig("Resultado.eps", format='eps')
 fig.savefig("Resultado.png")
 
 from matplotlib import cm
