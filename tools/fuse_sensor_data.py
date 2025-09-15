@@ -17,16 +17,29 @@ def track_to_track_fusion(mean1, cov1, mean2, cov2):
     fused_mean = np.dot(fused_cov, np.dot(cov_inv1, mean1) + np.dot(cov_inv2, mean2))
     return fused_mean, fused_cov
 
+
+
+def safe_eval_list(s):
+    """
+    Safely evaluate a string representation of a list, correctly handling 'nan'.
+    """
+    try:
+        # Provide a scope to eval where 'nan' is defined as numpy.nan
+        return eval(s, {"nan": np.nan})
+    except NameError:
+        # If eval fails for any reason, return a list of NaNs
+        return [np.nan, np.nan, np.nan]
+
 df = pd.read_csv("FUSAO_PROCESSADA.csv", sep=";")
 # Drop np.isnan values - Making this check more comprehensive
-df: pd.DataFrame = df.dropna(subset=['x_ble', 'y_ble', 'x_ble_filter', 'y_ble_filter']).reset_index(drop=True)
+# df: pd.DataFrame = df.dropna(subset=['x_ble', 'y_ble']).reset_index(drop=True)
 df["centroid_xyz"] = df["centroid_xyz"].apply(eval)
 df["ble_xyz"] = df["ble_xyz"].apply(eval)
-df["ble_xyz_filter"] = df["ble_xyz_filter"].apply(eval)
+df["ble_xyz_filter"] = df["ble_xyz_filter"].apply(safe_eval_list)
 df["real_xyz"] = df["real_xyz"].apply(eval)
 
 # <<< MODIFIED AND FINAL VERSION OF THE FUSION FUNCTION >>>
-def fuse_sensor_data(row, mmw_cov, ble_cov, mmwave_column="centroid_xyz", ble_column="ble_xyz_filter"):
+def fuse_sensor_data(row, mmw_cov, ble_cov, mmwave_column="centroid_xyz", ble_column="ble_xyz_replace_filter"):
     """
     Robustly fuses sensor data, handling NaN inputs gracefully.
     """
@@ -50,19 +63,16 @@ def fuse_sensor_data(row, mmw_cov, ble_cov, mmwave_column="centroid_xyz", ble_co
                 fused_position, fused_covariance = mean_mmwave, mmw_cov
             else:
                 fused_position, fused_covariance = mean_ble, ble_cov
-    elif is_mmw_valid:
-        # **Case 2: Only mmWave is valid.** Use it directly.
-        fused_position, fused_covariance = mean_mmwave, mmw_cov
-    elif is_ble_valid:
-        # **Case 3: Only BLE is valid.** Use it directly.
-        fused_position, fused_covariance = mean_ble, ble_cov
     else:
         # **Case 4: Neither is valid.** Return a default value with high uncertainty.
-        fused_position = np.array([0.0, 0.0])
+        fused_position = np.array([np.nan, np.nan])
         fused_covariance = np.diag([1e6, 1e6]) # Large covariance = very uncertain
 
     fused_position = fused_position.tolist()
-    fused_position.append(1.78)  # Add Z coordinate
+    if np.isnan(fused_position).all():
+        fused_position.append(np.nan)  # Add Z coordinate
+    else:
+        fused_position.append(1.78)  # Add Z coordinate
 
     return fused_position, fused_covariance
 
@@ -72,7 +82,7 @@ def calculate_distance(row):
 df['distance'] = df.apply(calculate_distance, axis=1)
 
 # Default covariance for single-point groups or groups with all-NaN columns
-DEFAULT_COV = np.diag([0.1, 0.1]) 
+DEFAULT_COV = np.diag([0.0, 0.0])
 
 grouped_dict = {key: group for key, group in df.groupby("distance")}
 for key, group in grouped_dict.items():
@@ -81,7 +91,7 @@ for key, group in grouped_dict.items():
     else:
         # Helper to safely calculate variance, falling back to default if result is NaN
         def safe_var(series, default_variance):
-            v = series.var()
+            v = series.dropna().var()
             return default_variance if np.isnan(v) else v
 
         mmw_x_var = safe_var(group['centroid_xyz'].apply(lambda x: x[0]), DEFAULT_COV[0, 0]) + REGULARIZATION_FACTOR

@@ -7,11 +7,23 @@ from constants import RADAR_PLACEMENT
 # Load dataset
 data = pd.read_csv("fused_dataset.csv", sep=';')
 
+
+def safe_eval_list(s):
+    """
+    Safely evaluate a string representation of a list, correctly handling 'nan'.
+    """
+    try:
+        # Provide a scope to eval where 'nan' is defined as numpy.nan
+        return eval(s, {"nan": np.nan})
+    except NameError:
+        # If eval fails for any reason, return a list of NaNs
+        return [np.nan, np.nan, np.nan]
+
 # Ensure stringified lists are parsed correctly
 data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
 data['sensor_fused_xyz'] = data['sensor_fused_xyz'].apply(eval)
-data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(eval)
+data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
 data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
@@ -93,7 +105,7 @@ for method in methods:
     print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
     print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
-print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
+print(f'Absolute improvement in RMSE from MMW:', results['RMSE_MMW'].mean() - results['RMSE_Fusion'].mean())
 print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_Fusion'].mean()))*100}%")
 print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_Fusion'].mean()))*100}%")
 

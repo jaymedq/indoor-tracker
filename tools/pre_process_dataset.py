@@ -50,8 +50,8 @@ def createTimeToDt(row):
         print(row)
         raise e
 
-def fix_x_axis(row):
-    return [row['x_ble'] * -1, row['y_ble'] * -1, row['x_ble_filter'] * -1, row['y_ble_filter'] * -1]
+def fix_x_axis(row, x_col, y_col):
+    return [row[x_col] * -1, row[y_col] * -1]
 
 
 def fuse_datasets():
@@ -84,8 +84,10 @@ def fuse_datasets():
             ble_data["create_time"], format="%Y-%m-%d %H:%M:%S"
         )
         # rename x,y,z columns to x_ble, y_ble, z_ble
-        ble_data.rename(columns={"x": "x_ble", "y": "y_ble", "x_filter": "x_ble_filter", "y_filter": "y_ble_filter", "z": "z_ble"}, inplace=True)
-        ble_data[["x_ble", "y_ble", "x_ble_filter", "y_ble_filter"]] =  ble_data.apply(fix_x_axis, axis=1, result_type='expand')
+        ble_data.rename(columns={"x": "x_ble", "y": "y_ble", "x_filter": "x_ble_filter", "y_filter": "y_ble_filter", "z": "z_ble", "x_replace_filter": "x_ble_replace_filter", "y_replace_filter": "y_ble_replace_filter"}, inplace=True)
+        ble_data[["x_ble", "y_ble"]] =  ble_data.apply(fix_x_axis, x_col = 'x_ble', y_col = 'y_ble', axis=1, result_type='expand')
+        ble_data[["x_ble_filter", "y_ble_filter"]] =  ble_data.apply(fix_x_axis, x_col = 'x_ble_filter', y_col = 'y_ble_filter', axis=1, result_type='expand')
+        ble_data[["x_ble_replace_filter", "y_ble_replace_filter"]] =  ble_data.apply(fix_x_axis, x_col = 'x_ble_replace_filter', y_col = 'y_ble_replace_filter', axis=1, result_type='expand')
 
         fusion_data = pd.merge(
             ble_data, all_mmw_data, left_on="create_time", right_on="timestamp", how="inner"
@@ -103,7 +105,8 @@ def fuse_datasets():
 
     final_fused_dataset = pd.concat(all_fused_data, ignore_index=True)
     final_fused_dataset['ble_xyz'] = final_fused_dataset.apply(lambda row: (row["x_ble"], row["y_ble"], 1.78), axis=1)
-    final_fused_dataset['ble_xyz_filter'] = final_fused_dataset.apply(lambda row: (row["x_ble_filter"], row["y_ble_filter"], 1.78), axis=1)
+    final_fused_dataset['ble_xyz_filter'] = final_fused_dataset.apply(lambda row: (row["x_ble_filter"], row["y_ble_filter"], np.nan if np.isnan([row["x_ble_filter"], row["y_ble_filter"]]).all() else 1.78), axis=1)
+    final_fused_dataset['ble_xyz_replace_filter'] = final_fused_dataset.apply(lambda row: (row["x_ble_replace_filter"], row["y_ble_replace_filter"], 1.78), axis=1)
     final_fused_dataset.to_csv(FINAL_MERGED_FILENAME, index=False)
     print(f"Final merged dataset saved as {FINAL_MERGED_FILENAME}")
     return final_fused_dataset
