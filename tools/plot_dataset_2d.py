@@ -3,19 +3,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from constants import RADAR_PLACEMENT, EXPERIMENT_POINTS
-from calculate_mse_mae_rmse import calculate_mse_mae_rmse
+from ast import literal_eval
 from plot_room_2d import plot_obstacles, plot_radar_fov, plot_experiment_points
 
 # Load data
 data = pd.read_csv("fused_dataset.csv", sep=";")
 data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 
-# Ensure stringified lists are parsed correctly
-for col in ["x", "y", "z", "centroid_xyz", "real_xyz", "sensor_fused_xyz", "dl_sensor_fused_xyz"]:
-    if col in data.columns:
-        data[col] = data[col].apply(eval)
+def safe_eval_list(s):
+    """
+    Safely evaluate a string representation of a list, correctly handling 'nan'.
+    """
+    try:
+        return eval(s, {"nan": np.nan})
+    except NameError:
+        return [np.nan, np.nan, np.nan]
 
-errors = calculate_mse_mae_rmse(data)
+data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
+data["real_xyz"] = data["real_xyz"].apply(eval)
+data["sensor_fused_xyz_filter"] = data["sensor_fused_xyz_filter"].apply(safe_eval_list)
 
 def plot_colored_points(ax, x, y, times, cmap, label, size=10, marker='.'):
     """Plot points with fading colors (no connecting lines)."""
@@ -24,7 +30,7 @@ def plot_colored_points(ax, x, y, times, cmap, label, size=10, marker='.'):
     if label == "Real":
         ax.scatter(x, y, marker=marker, c="black", s=size, label=label)
     else:
-        norm = mpl.colors.Normalize(vmin=times.min()-1200, vmax=times.max())
+        norm = mpl.colors.Normalize(vmin=times.min()-50, vmax=times.max())
         ax.scatter(x, y, marker=marker, c=times, cmap=cmap, norm=norm, s=size, alpha=0.8, label=label)
 
 
@@ -36,9 +42,9 @@ for _, row in data.iterrows():
     if row.get("centroid_xyz"):
         trajectories["centroid"]["x"].append(row["centroid_xyz"][0])
         trajectories["centroid"]["y"].append(row["centroid_xyz"][1])
-    if row.get("sensor_fused_xyz"):
-        trajectories["sensor_fused"]["x"].append(row["sensor_fused_xyz"][0])
-        trajectories["sensor_fused"]["y"].append(row["sensor_fused_xyz"][1])
+    if row.get("sensor_fused_xyz_filter") and not np.isnan(row["sensor_fused_xyz_filter"]).any():
+        trajectories["sensor_fused"]["x"].append(row["sensor_fused_xyz_filter"][0])
+        trajectories["sensor_fused"]["y"].append(row["sensor_fused_xyz_filter"][1])
     if row.get("dl_sensor_fused_xyz"):
         trajectories["dl_sensor_fused"]["x"].append(row["dl_sensor_fused_xyz"][0])
         trajectories["dl_sensor_fused"]["y"].append(row["dl_sensor_fused_xyz"][1])
@@ -66,12 +72,12 @@ def make_subplot(ax, title, to_plot):
     if "sensor_fused" in to_plot and trajectories["sensor_fused"]["x"]:
         plot_colored_points(ax, trajectories["sensor_fused"]["x"], trajectories["sensor_fused"]["y"],
                             times[:len(trajectories["sensor_fused"]["x"])],
-                            plt.cm.Greens, "T2TF", size=12, marker='D')
+                            plt.cm.Reds, "T2TF", size=12, marker='D')
 
     if "dl_sensor_fused" in to_plot and trajectories["dl_sensor_fused"]["x"]:
         plot_colored_points(ax, trajectories["dl_sensor_fused"]["x"], trajectories["dl_sensor_fused"]["y"],
                             times[:len(trajectories["dl_sensor_fused"]["x"])],
-                            plt.cm.Reds, "DLFusion", size=12, marker='D')
+                            plt.cm.Greens, "DLFusion", size=12, marker='D')
 
     if "ble" in to_plot and trajectories["ble"]["x"]:
         plot_colored_points(ax, trajectories["ble"]["x"], trajectories["ble"]["y"],
@@ -92,7 +98,7 @@ def make_subplot(ax, title, to_plot):
 
 
 # Create one figure with 3 subplots side by side
-fig, axes = plt.subplots(1, 3, figsize=(9, 3))  # wide figure with 3 panels
+fig, axes = plt.subplots(1, 3, figsize=(12, 4))  # wide figure with 3 panels
 
 make_subplot(axes[0], "mmWave Centroid estimate", ["centroid"])
 make_subplot(axes[1], "Sensor Fusion estimate", ["sensor_fused", "dl_sensor_fused"])

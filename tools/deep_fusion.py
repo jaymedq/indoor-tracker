@@ -22,7 +22,7 @@ class SensorFusionDataset(Dataset):
 
         # parse fields (safer than eval)
         df['centroid_xyz']   = df['centroid_xyz'].apply(eval)
-        df['ble_xyz_filter'] = df['ble_xyz_filter'].apply(eval)
+        df['ble_xyz_replace_filter'] = df['ble_xyz_replace_filter'].apply(eval)
         df['real_xyz']       = df['real_xyz'].apply(eval)
 
         # features: mm x,y,z and ble x,y,z
@@ -30,7 +30,7 @@ class SensorFusionDataset(Dataset):
         Y = []
         for _, r in df.iterrows():
             mm = r['centroid_xyz']
-            ble = r['ble_xyz_filter']
+            ble = r['ble_xyz_replace_filter']
             gt = r['real_xyz']
             # skip if nan
             if any([np.isnan(v) for v in mm[:2]]) or any([np.isnan(v) for v in ble[:2]]):
@@ -172,7 +172,7 @@ def predict_and_save(csv_path, model_path, out_csv='dl_fused_output.csv', device
     df = pd.read_csv(csv_path, sep=';')
     df = df[~np.isnan(df[['x_ble']]).any(axis=1)].reset_index(drop=True)
     df['centroid_xyz']   = df['centroid_xyz'].apply(eval)
-    df['ble_xyz_filter'] = df['ble_xyz_filter'].apply(eval)
+    df['ble_xyz_replace_filter'] = df['ble_xyz_replace_filter'].apply(eval)
     df['real_xyz']       = df['real_xyz'].apply(eval)
 
     # build result columns aligned to the filtered rows used in dataset
@@ -182,7 +182,7 @@ def predict_and_save(csv_path, model_path, out_csv='dl_fused_output.csv', device
     j = 0
     for i, r in df.iterrows():
         mm = r['centroid_xyz']
-        ble = r['ble_xyz_filter']
+        ble = r['ble_xyz_replace_filter']
         if any([np.isnan(v) for v in mm[:2]]) or any([np.isnan(v) for v in ble[:2]]):
             fused_xy.append([np.nan, np.nan])
             fused_unc.append([np.nan, np.nan])

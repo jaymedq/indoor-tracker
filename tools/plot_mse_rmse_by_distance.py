@@ -100,20 +100,32 @@ plt.show()
 
 # Plotting RMSE by Distance
 fig, ax = plt.subplots(figsize=(4.5,3.5))
+multiplier = 0
+width = 0.2  # the width of the bars
+x = np.arange(len(results))  # the label locations
 for method in methods:
-    ax.plot(results['distance'], results[f'RMSE_{method}'], label=f'{method_label_map.get(method)}', marker= method_marker_map.get(method))
+    offset = width * multiplier
+    rects = ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+    ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
+    multiplier += 1
     print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
     print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
+
+
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
 print(f'Absolute improvement in RMSE from MMW:', results['RMSE_MMW'].mean() - results['RMSE_Fusion'].mean())
-print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_Fusion'].mean()))*100}%")
-print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_Fusion'].mean()))*100}%")
+print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_BLE'].mean()))*100}%")
+print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_BLE'].mean()))*100}%")
 
+x_labels = ['P1','P2','P3']
 # plt.title('Root Mean Squared Error (RMSE) by Distance')
 ax.set_xlabel('Distance [m]', fontsize=14)
 ax.set_ylabel('RMSE [m]', fontsize=14)
-ax.grid(True)
-fig.legend(loc="upper left")
+ax.set_ylim((0,1.4))
+ax.set_xticks(x + width * (len(methods) - 1) / 2, x_labels)
+ax.set_xticklabels(x_labels)
+ax.legend(loc='upper left')
+ax.grid(True, axis='y', linestyle='--', alpha=0.6)
 fig.tight_layout()
 fig.show()
 fig.savefig("Resultado.eps", format='eps')
