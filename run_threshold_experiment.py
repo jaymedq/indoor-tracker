@@ -58,14 +58,14 @@ def safe_eval_list(s):
 def main():
     """Main function to run the threshold experiment."""
     python_executable = sys.executable
-    thresholds = np.arange(0.05, 1.5, 0.05)
+    thresholds = np.arange(0.05, 0.7, 0.05)
     all_results = []
 
     # These are the files processed by the original .bat file
     test_files = [
-        "Results/T029_MMW_A1_BLE_C3P1/exported_T029_MMW_A1_BLE_C3P1.txt",
-        "Results/T030_MMW_A1_BLE_C3P2/exported_T030_MMW_A1_BLE_C3P2.txt",
-        "Results/T031_MMW_A1_BLE_C3P3/exported_T031_MMW_A1_BLE_C3P3.txt",
+        # "Results/T029_MMW_A1_BLE_C3P1/exported_T029_MMW_A1_BLE_C3P1.txt",
+        # "Results/T030_MMW_A1_BLE_C3P2/exported_T030_MMW_A1_BLE_C3P2.txt",
+        # "Results/T031_MMW_A1_BLE_C3P3/exported_T031_MMW_A1_BLE_C3P3.txt",
         "Results/T032_MMW_A1_BLE_C3P4/exported_T032_MMW_A1_BLE_C3P4.txt",
         "Results/T033_MMW_A1_BLE_C3P5/exported_T033_MMW_A1_BLE_C3P5.txt",
         "Results/T034_MMW_A1_BLE_C4PA/exported_T034_MMW_A1_BLE_C4PA.txt",
@@ -91,59 +91,59 @@ def main():
         # "Results/T060_MMW_A1_BLE_C1P5/exported_T060_MMW_A1_BLE_C1P5.txt",
     ]
 
-    # for threshold in thresholds:
-    #     threshold = round(threshold, 2)
-    #     print(f"--- Running experiment for threshold: {threshold} ---")
+    for threshold in thresholds:
+        threshold = round(threshold, 2)
+        print(f"--- Running experiment for threshold: {threshold} ---")
 
-    #     # 1. Run filter scripts
-    #     print("Running filter scripts...")
-    #     for file_path in test_files:
-    #         command = [
-    #             python_executable,
-    #             "tools/filter_dataset_columns.py",
-    #             "--input_file", file_path,
-    #             "--columns", "x", "y",
-    #             "--threshold", str(threshold)
-    #         ]
-    #         run_command(command)
+        # 1. Run filter scripts
+        print("Running filter scripts...")
+        for file_path in test_files:
+            command = [
+                python_executable,
+                "tools/filter_dataset_columns.py",
+                "--input_file", file_path,
+                "--columns", "x", "y",
+                "--threshold", str(threshold)
+            ]
+            run_command(command)
 
-    #     # 2. Run pre-process and fuse scripts
-    #     print("Running pre-process and fuse scripts...")
-    #     run_command([python_executable, "tools/pre_process_dataset.py"])
-    #     run_command([python_executable, "tools/fuse_sensor_data.py"])
+        # 2. Run pre-process and fuse scripts
+        print("Running pre-process and fuse scripts...")
+        run_command([python_executable, "tools/pre_process_dataset.py"])
+        run_command([python_executable, "tools/fuse_sensor_data.py"])
 
-    #     # 3. Calculate RMSE and store results
-    #     print("Calculating RMSE...")
-    #     try:
-    #         data = pd.read_csv("fused_dataset.csv", sep=';')
-    #         data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
-    #         data["real_xyz"] = data["real_xyz"].apply(eval)
-    #         data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
-    #         data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
-    #         data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
+        # 3. Calculate RMSE and store results
+        print("Calculating RMSE...")
+        try:
+            data = pd.read_csv("fused_dataset.csv", sep=';')
+            data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
+            data["real_xyz"] = data["real_xyz"].apply(eval)
+            data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
+            data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
+            data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
             
-    #         data['distance'] = data.apply(lambda row: np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT), axis=1)
+            data['distance'] = data.apply(lambda row: np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT), axis=1)
             
-    #         results = data.groupby('distance').apply(calculate_errors).reset_index()
-    #         results['threshold'] = threshold
-    #         all_results.append(results)
-    #     except FileNotFoundError:
-    #         print("Could not find fused_dataset.csv. Skipping RMSE calculation for this threshold.")
-    #     except Exception as e:
-    #         print(f"An error occurred during RMSE calculation: {e}")
-    #         print("Reverting changes...")
-    #         run_command(["git", "checkout", "--", "Results/"])
-    #         raise e
+            results = data.groupby('distance').apply(calculate_errors).reset_index()
+            results['threshold'] = threshold
+            all_results.append(results)
+        except FileNotFoundError:
+            print("Could not find fused_dataset.csv. Skipping RMSE calculation for this threshold.")
+        except Exception as e:
+            print(f"An error occurred during RMSE calculation: {e}")
+            print("Reverting changes...")
+            run_command(["git", "checkout", "--", "Results/"])
+            raise e
 
-    #     # 4. Revert changes
-    #     print("Reverting changes...")
-    #     run_command(["git", "checkout", "--", "Results/"])
+        # 4. Revert changes
+        print("Reverting changes...")
+        run_command(["git", "checkout", "--", "Results/"])
 
     # 5. Combine and save all results
     print("Saving combined results...")
-    if True:
-        # final_results = pd.concat(all_results, ignore_index=True)
-        # final_results.to_csv("threshold_experiment_results.csv", index=False)
+    if all_results:
+        final_results = pd.concat(all_results, ignore_index=True)
+        final_results.to_csv("threshold_experiment_results.csv", index=False)
         final_results = pd.read_csv("threshold_experiment_results.csv")
 
         # 6. Plot errors by distance
@@ -151,7 +151,7 @@ def main():
         plt.figure(figsize=(4.5,3.5))
         colors = plt.cm.jet(np.linspace(0, 1, len(thresholds)))
         
-        distance_data = final_results[final_results['distance'] == final_results['distance'][2]]
+        distance_data = final_results[final_results['distance'] == final_results['distance'][0]]
         fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()
 
@@ -164,7 +164,6 @@ def main():
         ax2.set_ylabel('Discard rate (%)', color='r', fontsize=14)
         # fig.legend(loc="upper right", bbox_to_anchor=(0.9, 0.8))
         ax1.grid(True)
-        ax2.grid(True)
         fig.tight_layout()
         fig.savefig("RMSE_DiscardRate.eps", format = 'eps')
         fig.savefig("RMSE_DiscardRate.png")
