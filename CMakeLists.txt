@@ -3,10 +3,13 @@ project(IWR6843Interface)
 
 set(CMAKE_CXX_STANDARD 14)
 
+enable_testing()
+
 # Define the shared library
 add_library(IWR6843Interface SHARED
     src/frames/AreaScannerFrame.cpp
     src/frames/DemoFrame.cpp
+    src/frames/PeopleTrackingFrame.cpp
     src/parser.cpp  # Ensure this file is included
 )
 

@@ -5,6 +5,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 set(SOURCES
     frames/AreaScannerFrame.cpp
     frames/DemoFrame.cpp
+    frames/PeopleTrackingFrame.cpp
     main.cpp
 )
 
@@ -12,6 +13,7 @@ set(SOURCES
 set(HEADERS
     frames/AreaScannerFrame.hpp
     frames/DemoFrame.hpp
+    frames/PeopleTrackingFrame.hpp
     frames/IFrame.hpp
 )
 

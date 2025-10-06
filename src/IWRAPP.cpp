@@ -14,7 +14,7 @@
 #include "parser.hpp"
 
 // Define constants similar to the Python script
-const std::string CONFIG_FILE_NAME = "../cfg/area_scanner_68xx_ISK.cfg";
+const std::string CONFIG_FILE_NAME = "cfg/ISK_14m_extended.cfg";
 const int REFRESH_TIME = 1; // in seconds
 
 // Class to handle IWR6843 Application logic

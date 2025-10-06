@@ -9,6 +9,7 @@
 
 #include "AreaScannerFrame.hpp"
 #include "DemoFrame.hpp"
+#include "PeopleTrackingFrame.hpp"
 
 
 extern "C" {
