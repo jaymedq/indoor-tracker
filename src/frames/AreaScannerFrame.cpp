@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <ctime>
 #include <chrono>
+#include <cmath>
 
 bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
     uint32_t currentOffset = 0ULL;
@@ -137,21 +138,28 @@ void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uin
     switch (type) {
         case MMWDEMO_OUTPUT_MSG_DETECTED_POINTS:
         {
-            if (length % sizeof(DPIF_PointCloudCartesian_t) != 0) {
+            if (length % sizeof(DPIF_PointCloudSpherical_t) != 0) {
                 std::cerr << "Payload size mismatch for detected points. Length: " << length 
-                          << ", expected multiple of " << sizeof(DPIF_PointCloudCartesian_t) << std::endl;
+                          << ", expected multiple of " << sizeof(DPIF_PointCloudSpherical_t) << std::endl;
                 return;
             }
-            uint16_t numDetectedPoints = length / sizeof(DPIF_PointCloudCartesian_t);
-            std::vector<DPIF_PointCloudCartesian_t> detectedPoints(numDetectedPoints);
+            uint16_t numDetectedPoints = length / sizeof(DPIF_PointCloudSpherical_t);
+            std::vector<DPIF_PointCloudSpherical_t> detectedPoints(numDetectedPoints);
             std::memcpy(detectedPoints.data(), payload.data(), length);
 
             std::cout << "Detected Points: " << numDetectedPoints << std::endl;
             for (int i = 0; i < detectedPoints.size(); ++i) {
-                pointCloud.push_back(detectedPoints[i]);
-                std::cout << "Point " << i << ": (" << detectedPoints[i].x << ", " 
-                            << detectedPoints[i].y << ", " << detectedPoints[i].z 
-                            << "), Velocity: " << detectedPoints[i].velocity << std::endl;
+                DPIF_PointCloudCartesian_t cartesianPoint;
+                float elev_radians = detectedPoints[i].elevAngle * (M_PI / 180.0);
+                float azimuth_radians = detectedPoints[i].azimuthAngle * (M_PI / 180.0);
+                cartesianPoint.x = detectedPoints[i].range * cos(elev_radians) * sin(azimuth_radians);
+                cartesianPoint.y = detectedPoints[i].range * cos(elev_radians) * cos(azimuth_radians);
+                cartesianPoint.z = detectedPoints[i].range * sin(elev_radians);
+                cartesianPoint.velocity = detectedPoints[i].velocity;
+                pointCloud.push_back(cartesianPoint);
+                std::cout << "Point " << i << ": (" << cartesianPoint.x << ", " 
+                            << cartesianPoint.y << ", " << cartesianPoint.z 
+                            << "), Velocity: " << cartesianPoint.velocity << std::endl;
             }
             break;
         }

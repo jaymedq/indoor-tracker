@@ -39,7 +39,7 @@ public:
 
     std::vector<uint8_t> readData()
     {
-        std::vector<uint8_t> byteBuffer;
+        std::vector<uint8_t> byteBuffer(0,0);
         if (dataPort.available())
         {
             std::string readBuffer = dataPort.read(dataPort.available());

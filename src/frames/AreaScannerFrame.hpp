@@ -61,6 +61,32 @@ public:
         float velocity;
     };
 
+    /**
+     * @brief
+     *  Point cloud definition in spherical coordinate system
+     */
+    struct DPIF_PointCloudSpherical_t
+    {
+        /*! @brief     Range in meters */
+        float range;
+
+        /*! @brief     Azimuth angle in degrees in the range [-90,90],
+        *             where positive angle represents the right hand side as viewed
+        *             from the sensor towards the scene and negative angle
+        *             represents left hand side */
+        float azimuthAngle;
+
+        /*! @brief     Elevation angle in degrees in the range [-90,90],
+                    where positive angle represents above the sensor and negative
+        *             below the sensor */
+        float elevAngle;
+
+        /*! @brief  Doppler velocity estimate in m/s. Positive velocity means target
+        *          is moving away from the sensor and negative velocity means target
+        *          is moving towards the sensor. */
+        float velocity;
+    };
+
     // Stats structure
     struct MmwDemo_output_message_stats_t {
         uint32_t interFrameProcessingTime;

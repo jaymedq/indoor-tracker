@@ -108,6 +108,14 @@ public:
 
     } MmwDemo_output_message_compressedPoint;
 
+    // Detected points structure (Example based on `DPIF_PointCloudCartesian_t`)
+    struct DPIF_PointCloudCartesian_t {
+        float x;
+        float y;
+        float z;
+        float velocity;
+    };
+
     // TLV header structure
     struct MmwDemo_output_message_tl_t {
         uint32_t type;
@@ -116,12 +124,76 @@ public:
 
     typedef struct MmwDemo_output_message_compressedPointCloud_uart_t
     {
-        MmwDemo_output_message_tl_t                 header;
-        MmwDemo_output_message_compressedPoint_unit pointUint;
-        MmwDemo_output_message_compressedPoint      point[MAX_RESOLVED_OBJECTS_PER_FRAME];
+        MmwDemo_output_message_tl_t header;
+        MmwDemo_output_message_compressedPoint_unit pointUnit;
+        std::vector<MmwDemo_output_message_compressedPoint> pointCloud;
     } MmwDemo_output_message_compressedPointCloud_uart;
+
+    /*!
+     * @brief
+     * Structure holds the target features
+     *
+     * @details
+     * For each detected target, we report position, velocity, and measurement error covariance
+     */
+    typedef struct trackerProc_Target_t
+    {
+        /*! @brief   tracking ID */
+        uint32_t tid;
+        /*! @brief   Detected target X coordinate, in m */
+        float posX;
+        /*! @brief   Detected target Y coordinate, in m */
+        float posY;
+        /*! @brief   Detected target Z coordinate, in m */
+        float posZ;
+        /*! @brief   Detected target X velocity, in m/s */
+        float velX;
+        /*! @brief   Detected target Y velocity, in m/s */
+        float velY;
+        /*! @brief   Detected target Z velocity, in m/s */
+        float velZ;
+        /*! @brief   Detected target X acceleration, in m/s2 */
+        float accX;
+        /*! @brief   Detected target Y acceleration, in m/s2 */
+        float accY;
+        /*! @brief   Detected target Z acceleration, in m/s2 */
+        float accZ;
+        /*! @brief   Target Error covarience matrix, [4x4 float], in row major order, range, azimuth, elev, doppler */
+        float ec[16];
+        /*! @brief   Gating function gain */
+        float g;
+        /*! @brief   Tracker confidence metric*/
+        float confidenceLevel;
+    } trackerProc_Target;
+
+    /*!
+    * @brief
+    * Holds the output data format of trackid, minimum and maximum z values
+    *
+    * @details
+    * Sent up to the UART for output
+    */
+    typedef struct heightDet_TargetHeight_t
+    {
+        /*! @brief   tracking ID */
+        uint32_t tid;
+        /*! @brief   Detected maximum Z coordinate, in m */
+        float maxZ;
+        /*! @brief   Detected minimum Z coordinate, in m */
+        float minZ;
+    } heightDet_TargetHeight;
 
 private:
     void parseTLV(std::vector<uint8_t> payload, uint32_t type, uint32_t length);
+    void uncompressPointCloud();
+
+private:
+    uint32_t m_u32NumPoints = 0;
+    uint32_t m_presenceIndication = 0;
+    uint8_t m_targetID = 0;
+    MmwDemo_output_message_compressedPointCloud_uart m_compressedPointCloud = {};
+    std::vector<trackerProc_Target> m_targets = {};
+    std::vector<heightDet_TargetHeight> m_targetHeights = {};
+    
 };
 #endif // PEOPLE_TRACKING_FRAME_HPP
