@@ -66,10 +66,10 @@ void PeopleTrackingFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, 
             m_compressedPointCloud.header.length = length;
             memcpy(&m_compressedPointCloud.pointUnit, payload.data(), sizeof(m_compressedPointCloud.pointUnit));
             m_u32NumPoints = (length - sizeof(MmwDemo_output_message_compressedPoint_unit)) / sizeof(MmwDemo_output_message_compressedPoint);
-            for(uint32_t i = 0; i < m_u32NumPoints; ++i) {
-                MmwDemo_output_message_compressedPoint point = {};
-                memcpy(&point,  payload.data() + sizeof(MmwDemo_output_message_compressedPoint_unit) + (1+i) * sizeof(MmwDemo_output_message_compressedPoint), sizeof(MmwDemo_output_message_compressedPoint));
-                m_compressedPointCloud.pointCloud.push_back(point);
+            std::vector<MmwDemo_output_message_compressedPoint> detectedPoints(m_u32NumPoints);
+            memcpy(detectedPoints.data(), payload.data() + sizeof(MmwDemo_output_message_compressedPoint_unit), length - sizeof(MmwDemo_output_message_compressedPoint_unit));
+            for(uint32_t i = 0; i < detectedPoints.size(); i++) {
+                m_compressedPointCloud.pointCloud.push_back(detectedPoints[i]);
             }
             std::cout << "Point Cloud TLV: " << m_compressedPointCloud.header.length << " bytes, Points: " << m_u32NumPoints << std::endl;
             break;
@@ -144,19 +144,14 @@ void PeopleTrackingFrame::toCsv(const std::string &path) const
     std::vector<DPIF_PointCloudCartesian_t> cartesianPointCloud;
     for (size_t i = 0; i < m_compressedPointCloud.pointCloud.size(); ++i) {
         DPIF_PointCloudCartesian_t cartesianPoint;
-        MmwDemo_output_message_compressedPoint detectedPoint = m_compressedPointCloud.pointCloud[i];
-        detectedPoint.azimuth *= m_compressedPointCloud.pointUnit.azimuthUnit;
-        detectedPoint.elevation *= m_compressedPointCloud.pointUnit.elevationUnit;
-        detectedPoint.doppler *= m_compressedPointCloud.pointUnit.dopplerUnit;
-        detectedPoint.range *= m_compressedPointCloud.pointUnit.rangeUnit;
-        detectedPoint.snr *= m_compressedPointCloud.pointUnit.snrUint;
         // Convert degrees to radians for trigonometric functions
-        float elev_radians = detectedPoint.elevation * (M_PI / 180.0);
-        float azimuth_radians = detectedPoint.azimuth * (M_PI / 180.0);
-        cartesianPoint.x = detectedPoint.range * cos(elev_radians) * sin(azimuth_radians);
-        cartesianPoint.y = detectedPoint.range * cos(elev_radians) * cos(azimuth_radians);
-        cartesianPoint.z = detectedPoint.range * sin(elev_radians);
-        cartesianPoint.velocity = detectedPoint.doppler;
+        float elev_radians = m_compressedPointCloud.pointCloud[i].elevation * m_compressedPointCloud.pointUnit.elevationUnit;
+        float azimuth_radians = m_compressedPointCloud.pointCloud[i].azimuth * m_compressedPointCloud.pointUnit.azimuthUnit;
+        float range = m_compressedPointCloud.pointCloud[i].range * m_compressedPointCloud.pointUnit.rangeUnit;
+        cartesianPoint.x = range * cos(elev_radians) * cos(azimuth_radians);
+        cartesianPoint.y = range * cos(elev_radians) * sin(azimuth_radians);
+        cartesianPoint.z = range * sin(elev_radians);
+        cartesianPoint.velocity = m_compressedPointCloud.pointCloud[i].doppler * m_compressedPointCloud.pointUnit.dopplerUnit;
         cartesianPointCloud.push_back(cartesianPoint);
     }
 

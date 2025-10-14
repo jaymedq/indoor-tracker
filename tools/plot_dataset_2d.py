@@ -7,8 +7,12 @@ from ast import literal_eval
 from plot_room_2d import plot_obstacles, plot_radar_fov, plot_experiment_points
 
 # Load data
-data = pd.read_csv("fused_dataset.csv", sep=";")
-data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
+data = pd.read_csv("..\\output_14-10-2025_19_16_36.csv", sep=",")
+try:
+    data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
+except:
+    # 13/10/2025 16:41:41
+    data["timestamp"] = pd.to_datetime(data["timestamp"], format="%d/%m/%Y %H:%M:%S")
 
 def safe_eval_list(s):
     """
@@ -19,9 +23,39 @@ def safe_eval_list(s):
     except NameError:
         return [np.nan, np.nan, np.nan]
 
-data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
-data["real_xyz"] = data["real_xyz"].apply(eval)
-data["sensor_fused_xyz_filter"] = data["sensor_fused_xyz_filter"].apply(safe_eval_list)
+def calculate_centroid(row):
+    centroid_x = round(np.mean(row['x']), 2)
+    centroid_y = round(np.mean(row['y']), 2)
+    centroid_z = round(np.mean(row['z']), 2)
+    return [centroid_x, centroid_y, centroid_z]
+
+def transform_coordinates(row):
+    transformed = np.array([
+        RADAR_PLACEMENT[0] + row['x'],  # Add radar x
+        RADAR_PLACEMENT[1] - row['y'],  # Subtract radar y
+        RADAR_PLACEMENT[2] + row['z']   # Add radar z
+    ])
+    return [transformed[0].tolist(), transformed[1].tolist(), transformed[2].tolist()]
+
+
+def process_centroids(df):
+    df['x'] = df['x'].apply(eval)
+    df['y'] = df['y'].apply(eval)
+    df['z'] = df['z'].apply(eval)
+    df['velocity'] = df['velocity'].apply(eval)
+
+    df[['x', 'y', 'z']] = df.apply(transform_coordinates, axis=1, result_type='expand')
+    #drop rows where x,y,z are empty lists
+    df = df[df['x'].apply(lambda x: len(x) > 0) & df['y'].apply(lambda y: len(y) > 0) & df['z'].apply(lambda z: len(z) > 0)]
+    df['centroid_xyz'] = df.apply(calculate_centroid, axis=1)
+    return df
+
+if "centroid_xyz" in data.columns:
+    data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
+    data["real_xyz"] = data["real_xyz"].apply(eval)
+    data["sensor_fused_xyz_filter"] = data["sensor_fused_xyz_filter"].apply(safe_eval_list)
+else:
+    data = process_centroids(data)
 
 def plot_colored_points(ax, x, y, times, cmap, label, size=10, marker='.'):
     """Plot points with fading colors (no connecting lines)."""
@@ -32,7 +66,6 @@ def plot_colored_points(ax, x, y, times, cmap, label, size=10, marker='.'):
     else:
         norm = mpl.colors.Normalize(vmin=times.min()-50, vmax=times.max())
         ax.scatter(x, y, marker=marker, c=times, cmap=cmap, norm=norm, s=size, alpha=0.8, label=label)
-
 
 # Prepare trajectories
 trajectories = {k: {"x": [], "y": []} for k in ["centroid","sensor_fused","dl_sensor_fused","real","ble"]}

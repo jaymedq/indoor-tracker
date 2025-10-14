@@ -10,7 +10,7 @@ extern "C" __declspec(dllexport) std::unique_ptr<IFrame> createFrame(const std::
     }
     if (data[0] == 0x02 && data[1] == 0x01 && data[2] == 0x04 &&
         data[3] == 0x03) { // Check for AreaScannerFrame magic word
-        return std::make_unique<PeopleTrackingFrame>();
+        return std::make_unique<AreaScannerFrame>();
     } else {
         std::cerr << "Unrecognized frame type\n";
         return nullptr;

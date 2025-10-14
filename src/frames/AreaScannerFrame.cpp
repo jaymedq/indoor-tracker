@@ -150,11 +150,12 @@ void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uin
             std::cout << "Detected Points: " << numDetectedPoints << std::endl;
             for (int i = 0; i < detectedPoints.size(); ++i) {
                 DPIF_PointCloudCartesian_t cartesianPoint;
-                float elev_radians = detectedPoints[i].elevAngle * (M_PI / 180.0);
-                float azimuth_radians = detectedPoints[i].azimuthAngle * (M_PI / 180.0);
-                cartesianPoint.x = detectedPoints[i].range * cos(elev_radians) * sin(azimuth_radians);
-                cartesianPoint.y = detectedPoints[i].range * cos(elev_radians) * cos(azimuth_radians);
-                cartesianPoint.z = detectedPoints[i].range * sin(elev_radians);
+                const float elev_radians = detectedPoints[i].elevAngle;
+                const float azimuth_radians = detectedPoints[i].azimuthAngle;
+                const float range = detectedPoints[i].range;
+                cartesianPoint.x = range * cos(elev_radians) * cos(azimuth_radians);
+                cartesianPoint.y = range * cos(elev_radians) * sin(azimuth_radians);
+                cartesianPoint.z = range * sin(elev_radians);
                 cartesianPoint.velocity = detectedPoints[i].velocity;
                 pointCloud.push_back(cartesianPoint);
                 std::cout << "Point " << i << ": (" << cartesianPoint.x << ", " 
