@@ -41,6 +41,7 @@ EXPERIMENT_POINTS = {
     "ANCHOR2" :  [0.99, -1.206, 2.416],
     "ANCHOR3" :  [5.717, -7.846, 2.41],
     "ANCHOR4" :  [3.524,  -4.629, 2.416],
+    "ANCHOR5" :  [0.98, -4.5, 1.78],
 }
 
 RADAR_FACING_ANGLE = 0  # facing right along +X axis (0 degrees)

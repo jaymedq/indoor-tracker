@@ -7,7 +7,7 @@ from ast import literal_eval
 from plot_room_2d import plot_obstacles, plot_radar_fov, plot_experiment_points
 
 # Load data
-data = pd.read_csv("..\\output_14-10-2025_19_16_36.csv", sep=",")
+data = pd.read_csv("fused_dataset.csv", sep=";")
 try:
     data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 except:
