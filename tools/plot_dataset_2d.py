@@ -137,6 +137,10 @@ make_subplot(axes[0], "mmWave Centroid estimate", ["centroid"])
 make_subplot(axes[1], "Sensor Fusion estimate", ["sensor_fused", "dl_sensor_fused"])
 make_subplot(axes[2], "BLE estimate", ["ble"])
 
+axes[0].legend(loc='lower right')
+axes[1].legend(loc='lower right')
+axes[2].legend(loc='lower right')
+
 plt.tight_layout()
 plt.savefig("trajectories_comparison.png")
 plt.show()

@@ -66,9 +66,9 @@ def main():
         # "Results/T029_MMW_A1_BLE_C3P1/exported_T029_MMW_A1_BLE_C3P1.txt",
         # "Results/T030_MMW_A1_BLE_C3P2/exported_T030_MMW_A1_BLE_C3P2.txt",
         # "Results/T031_MMW_A1_BLE_C3P3/exported_T031_MMW_A1_BLE_C3P3.txt",
-        "Results/T032_MMW_A1_BLE_C3P4/exported_T032_MMW_A1_BLE_C3P4.txt",
-        "Results/T033_MMW_A1_BLE_C3P5/exported_T033_MMW_A1_BLE_C3P5.txt",
-        "Results/T034_MMW_A1_BLE_C4PA/exported_T034_MMW_A1_BLE_C4PA.txt",
+        # "Results/T032_MMW_A1_BLE_C3P4/exported_T032_MMW_A1_BLE_C3P4.txt",
+        # "Results/T033_MMW_A1_BLE_C3P5/exported_T033_MMW_A1_BLE_C3P5.txt",
+        # "Results/T034_MMW_A1_BLE_C4PA/exported_T034_MMW_A1_BLE_C4PA.txt",
         # "Results/T035_MMW_A1_BLE_CVP1/exported_T035_MMW_A1_BLE_CVP1.txt",
         # "Results/T036_MMW_A1_BLE_CVP2/exported_T036_MMW_A1_BLE_CVP2.txt",
         # "Results/T037_MMW_A1_BLE_CVP3/exported_T037_MMW_A1_BLE_CVP3.txt",
@@ -89,6 +89,21 @@ def main():
         # "Results/T058_MMW_A1_BLE_C3P2/exported_T058_MMW_A1_BLE_C3P2.txt",
         # "Results/T059_MMW_A1_BLE_C4P1/exported_T059_MMW_A1_BLE_C4P1.txt",
         # "Results/T060_MMW_A1_BLE_C1P5/exported_T060_MMW_A1_BLE_C1P5.txt",
+        # "Results/T100_MMW_A5_BLE_C2P2/exported_T100_MMW_A5_BLE_C2P2.txt",
+        # "Results/T100_MMW_A5_BLE_C2P3/exported_T100_MMW_A5_BLE_C2P3.txt",
+        # "Results/T102_MMW_A5_BLE_C2P4/exported_T102_MMW_A5_BLE_C2P4.txt",
+        # "Results/T103_MMW_A5_BLE_C2P5/exported_T103_MMW_A5_BLE_C2P5.txt",
+        # "Results/T104_MMW_A5_BLE_C4P4/exported_T104_MMW_A5_BLE_C4P4.txt",
+        # "Results/T105_MMW_A5_BLE_C3P5/exported_T105_MMW_A5_BLE_C3P5.txt",
+        # "Results/T106_MMW_A5_BLE_C3P4/exported_T106_MMW_A5_BLE_C3P4.txt",
+        # "Results/T107_MMW_A5_BLE_C3P3/exported_T107_MMW_A5_BLE_C3P3.txt",
+        # "Results/T108_MMW_A5_BLE_C1P4/exported_T108_MMW_A5_BLE_C1P4.txt",
+        # "Results/T108_MMW_A5_BLE_C1P5/exported_T108_MMW_A5_BLE_C1P5.txt",
+        # "Results/T110_MMW_A5_BLE_C1P3/exported_T110_MMW_A5_BLE_C1P3.txt",
+        "Results/T136_MMW_A5_BLE_C2P2/exported_T136_MMW_A5_BLE_C2P2.txt",
+        "Results/T137_MMW_A5_BLE_C2P3/exported_T137_MMW_A5_BLE_C2P3.txt",
+        "Results/T138_MMW_A5_BLE_C2P4/exported_T138_MMW_A5_BLE_C2P4.txt",
+        "Results/T139_MMW_A5_BLE_C2P5/exported_T139_MMW_A5_BLE_C2P5.txt"
     ]
 
     for threshold in thresholds:
@@ -164,6 +179,7 @@ def main():
         ax2.set_ylabel('Discard rate (%)', color='r', fontsize=14)
         # fig.legend(loc="upper right", bbox_to_anchor=(0.9, 0.8))
         ax1.grid(True)
+        ax1.tick_params()
         fig.tight_layout()
         fig.savefig("RMSE_DiscardRate.eps", format = 'eps')
         fig.savefig("RMSE_DiscardRate.png")

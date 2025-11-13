@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mse
-from constants import RADAR_PLACEMENT
+from constants import EXPERIMENT_POINTS, RADAR_PLACEMENT
+from plot_room_2d import POINTS_TO_CONSIDER
 
 # Load dataset
 data = pd.read_csv("fused_dataset.csv", sep=';')
@@ -117,7 +118,15 @@ print(f'Absolute improvement in RMSE from MMW:', results['RMSE_MMW'].mean() - re
 print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_BLE'].mean()))*100}%")
 print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_BLE'].mean()))*100}%")
 
-x_labels = ['P1','P2','P3']
+x_labels = [f'P{i}' for i in range(len(results))]
+ordered_points = []
+filtered_experiment_points = {k: v for k, v in EXPERIMENT_POINTS.items() if k in POINTS_TO_CONSIDER}
+for point in filtered_experiment_points:
+    dist = np.linalg.norm(np.array(filtered_experiment_points[point]) - np.array(RADAR_PLACEMENT))
+    ordered_points.append((point, dist))
+ordered_points.sort(key=lambda x: x[1])
+x_labels = [point[0] for point in ordered_points]
+
 # plt.title('Root Mean Squared Error (RMSE) by Distance')
 ax.set_xlabel('Distance [m]', fontsize=14)
 ax.set_ylabel('RMSE [m]', fontsize=14)

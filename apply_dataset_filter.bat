@@ -1,3 +1,4 @@
-py tools\filter_dataset_columns.py --input "Results\T032_MMW_A1_BLE_C3P4\exported_T032_MMW_A1_BLE_C3P4.txt" --columns x y --threshold 0.2
-py tools\filter_dataset_columns.py --input "Results\T033_MMW_A1_BLE_C3P5\exported_T033_MMW_A1_BLE_C3P5.txt" --columns x y --threshold 0.2
-py tools\filter_dataset_columns.py --input "Results\T034_MMW_A1_BLE_C4PA\exported_T034_MMW_A1_BLE_C4PA.txt" --columns x y --threshold 0.2
+py tools\filter_dataset_columns.py --input "Results\T136_MMW_A5_BLE_C2P2\exported_T136_MMW_A5_BLE_C2P2.txt" --columns x y --threshold 0.2
+py tools\filter_dataset_columns.py --input "Results\T137_MMW_A5_BLE_C2P3\exported_T137_MMW_A5_BLE_C2P3.txt" --columns x y --threshold 0.2
+py tools\filter_dataset_columns.py --input "Results\T138_MMW_A5_BLE_C2P4\exported_T138_MMW_A5_BLE_C2P4.txt" --columns x y --threshold 0.2
+py tools\filter_dataset_columns.py --input "Results\T139_MMW_A5_BLE_C2P5\exported_T139_MMW_A5_BLE_C2P5.txt" --columns x y --threshold 0.2

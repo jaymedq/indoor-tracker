@@ -44,7 +44,7 @@ def run_experiment(test_name, test_description):
     session.execute(text("SET statement_timeout = 300000"))
 
     try:
-        TEST_TIME = 120  # seconds of experiment duration
+        TEST_TIME = 350  # seconds of experiment duration
         print("Annotating BLE acquisition in the database...")
         start_test(session, test_name, test_description)
         sleep(TEST_TIME)
