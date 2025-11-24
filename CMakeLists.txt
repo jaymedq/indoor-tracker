@@ -1,59 +1,51 @@
+# project-root/CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
-project(IWR6843Interface)
+project(SensorFusionProject CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 enable_testing()
 
-# Define the shared library
-add_library(IWR6843Interface SHARED
-    src/frames/AreaScannerFrame.cpp
-    src/frames/DemoFrame.cpp
-    src/frames/PeopleTrackingFrame.cpp
-    src/parser.cpp  # Ensure this file is included
-)
+# Define a variable for the project's main include directory
+set(PROJECT_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 
-# Specify include directories for the shared library
-target_include_directories(IWR6843Interface PUBLIC src/frames)
-target_include_directories(IWR6843Interface PUBLIC src)
-
-# Serial library
-target_include_directories(IWR6843Interface PUBLIC third-party/include)
-include_directories(third-party/include)
-## Sources
-set(serial_SRCS
+# --- THIRD-PARTY: Serial Library Definition ---
+# Define sources for the 'serial' library
+set(SERIAL_BASE_SRCS
     third-party/src/serial.cc
-    third-party/include/serial/serial.h
-    third-party/include/serial/v8stdint.h
 )
-if(APPLE)
-    # If OSX
-    list(APPEND serial_SRCS third-party/src/impl/unix.cc)
-    list(APPEND serial_SRCS third-party/src/impl/list_ports/list_ports_osx.cc)
-elseif(UNIX)
-    # If unix
-    list(APPEND serial_SRCS third-party/src/impl/unix.cc)
-    list(APPEND serial_SRCS third-party/src/impl/list_ports/list_ports_linux.cc)
-else()
-    # If windows
-    list(APPEND serial_SRCS third-party/src/impl/win.cc)
-    list(APPEND serial_SRCS third-party/src/impl/list_ports/list_ports_win.cc)
+
+# Platform-specific logic for serial library
+if(WIN32)
+    list(APPEND SERIAL_BASE_SRCS third-party/src/impl/win.cc)
+    set(SERIAL_LIBS "SetupAPI")
+elseif(UNIX AND NOT APPLE)
+    list(APPEND SERIAL_BASE_SRCS third-party/src/impl/unix.cc)
+    set(SERIAL_LIBS "rt")
+elseif(APPLE)
+    list(APPEND SERIAL_BASE_SRCS third-party/src/impl/unix.cc)
+    # No specific libs needed for macOS
 endif()
 
-## Add serial library
-add_library(serial ${serial_SRCS})
-if(APPLE)
-    target_link_libraries(serial ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
-elseif(UNIX)
-    target_link_libraries(serial rt pthread)
-else()
-    target_link_libraries(serial setupapi)
+# Add the 'serial' library
+add_library(serial STATIC ${SERIAL_BASE_SRCS})
+
+# Set include directories for consumers of the serial library
+target_include_directories(serial PUBLIC 
+    third-party/include
+)
+
+# Link platform-specific libraries
+if(SERIAL_LIBS)
+    target_link_libraries(serial PRIVATE ${SERIAL_LIBS})
 endif()
 
-# Define the executable
-add_executable(IWR6843TestApp src/main.cpp)
-add_executable(IWRApp src/IWRAPP.cpp)
+# Add the 'src' directory, which will handle all sub-library definitions
+add_subdirectory(src)
 
-# Link the executable with the shared library
-target_link_libraries(IWR6843TestApp IWR6843Interface)
-target_link_libraries(IWRApp IWR6843Interface serial)
+# Add the 'tests' directory
+add_subdirectory(tests)

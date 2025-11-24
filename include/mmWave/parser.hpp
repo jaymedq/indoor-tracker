@@ -12,9 +12,7 @@
 #include "PeopleTrackingFrame.hpp"
 
 
-extern "C" {
-    __declspec(dllexport) std::unique_ptr<IFrame> createFrame(const std::vector<uint8_t> &data);
-    __declspec(dllexport) int parse_frame(const uint8_t* data, size_t length);
-}
+std::unique_ptr<IFrame> createFrame(const std::vector<uint8_t> &data);
+int parse_frame(const uint8_t* data, size_t length);
 
 #endif // PARSER_HPP

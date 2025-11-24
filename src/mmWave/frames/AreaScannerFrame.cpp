@@ -16,6 +16,11 @@
 bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
     uint32_t currentOffset = 0ULL;
 
+    if (inputData.size() < sizeof(header)) {
+        std::cerr << "Invalid data size for header" << std::endl;
+        return false;
+    }
+
     memcpy(&header,  &inputData.at(currentOffset), sizeof(header));
     currentOffset += sizeof(header);
 
@@ -32,13 +37,23 @@ bool AreaScannerFrame::parse(std::vector<uint8_t> &inputData) {
 
     // Iterate over TLVs
     for (uint32_t i = 0; i < header.numTLVs; ++i) {
+        if (currentOffset + sizeof(MmwDemo_output_message_tl_t) > inputData.size()) {
+            std::cerr << "Invalid data size for TLV header" << std::endl;
+            return false;
+        }
         MmwDemo_output_message_tl_t tl = {};
         memcpy(&tl,  &inputData.at(currentOffset), sizeof(tl));
         currentOffset += sizeof(tl);
 
+        if (currentOffset + tl.length > inputData.size()) {
+            std::cerr << "Invalid data size for TLV payload" << std::endl;
+            return false;
+        }
+
         // Parse the payload associated with the TLV
-        std::vector<uint8_t> tlvSlice(inputData.begin() + currentOffset, inputData.end());
+        std::vector<uint8_t> tlvSlice(inputData.begin() + currentOffset, inputData.begin() + currentOffset + tl.length);
         parseTLV(tlvSlice, tl.type, tl.length);
+        currentOffset += tl.length;
     }
     return true;
 }
