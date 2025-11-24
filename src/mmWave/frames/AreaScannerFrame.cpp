@@ -96,6 +96,7 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
 
         std::ostringstream timeStream;
         timeStream << std::put_time(local_time, "%d/%m/%Y %H:%M:%S");
+
         file << pointCloud.size() << ",";
         file << "\"[";
         for (size_t i = 0; i < pointCloud.size(); ++i) {
@@ -125,6 +126,40 @@ void AreaScannerFrame::toCsv(const std::string& filePath) const {
         for (size_t i = 0; i < pointCloud.size(); ++i) {
             file << pointCloud[i].velocity;
             if (i < pointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+
+        file << staticObjectsPointCloud.size() << ",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].x;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].y;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].z;
+            if (i < staticObjectsPointCloud.size() - 1) {
+                file << ", ";
+            }
+        }
+        file << "]\",";
+        file << "\"[";
+        for (size_t i = 0; i < staticObjectsPointCloud.size(); ++i) {
+            file << staticObjectsPointCloud[i].velocity;
+            if (i < staticObjectsPointCloud.size() - 1) {
                 file << ", ";
             }
         }
@@ -176,6 +211,35 @@ void AreaScannerFrame::parseTLV(std::vector<uint8_t> payload, uint32_t type, uin
                 std::cout << "Point " << i << ": (" << cartesianPoint.x << ", " 
                             << cartesianPoint.y << ", " << cartesianPoint.z 
                             << "), Velocity: " << cartesianPoint.velocity << std::endl;
+            }
+            break;
+        }
+        // --- TLV Type 8: Static Detected Points (Clutter) ---
+        case MMWDEMO_OUTPUT_MSG_STATIC_DETECTED_POINTS:
+        {
+            if (length % sizeof(DPIF_PointCloudSpherical_t) != 0) {
+                std::cerr << "Payload size mismatch for static detected points. Length: " << length 
+                        << ", expected multiple of " << sizeof(DPIF_PointCloudSpherical_t) << std::endl;
+                return;
+            }
+            uint16_t numStaticPoints = length / sizeof(DPIF_PointCloudSpherical_t);
+            std::vector<DPIF_PointCloudSpherical_t> staticPoints(numStaticPoints);
+            std::memcpy(staticPoints.data(), payload.data(), length);
+
+            staticObjectsPointCloud.reserve(numStaticPoints);
+            std::cout << "TLV 8: Detected Static Points: " << numStaticPoints << std::endl;
+            for (size_t i = 0; i < staticPoints.size(); ++i) {
+                DPIF_PointCloudCartesian_t cartesianPoint;
+                const float elev_radians = staticPoints[i].elevAngle;
+                const float azimuth_radians = staticPoints[i].azimuthAngle;
+                const float range = staticPoints[i].range;
+                
+                // Convert Spherical to Cartesian
+                cartesianPoint.x = range * cos(elev_radians) * cos(azimuth_radians);
+                cartesianPoint.y = range * cos(elev_radians) * sin(azimuth_radians);
+                cartesianPoint.z = range * sin(elev_radians);
+                cartesianPoint.velocity = staticPoints[i].velocity;
+                staticObjectsPointCloud.push_back(cartesianPoint);
             }
             break;
         }

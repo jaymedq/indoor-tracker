@@ -52,6 +52,12 @@
 
     void IWRAPP::run(const std::string &filename)
     {
+        dataPort.flush();
+        dataPort.close();
+        cliPort.flush();
+        cliPort.close();
+        cliPort.open();
+        dataPort.open();
         while (true)
         {
             std::vector<uint8_t> byteVec = readData();
@@ -69,7 +75,7 @@
                 }
             }
 #ifdef _WIN32
-            Sleep(REFRESH_TIME * 1000); // Sleep for REFRESH_TIME seconds
+            Sleep(int(REFRESH_TIME * 1000)); // Sleep for REFRESH_TIME seconds
 #else
             sleep(REFRESH_TIME); // Sleep for REFRESH_TIME seconds
 #endif

@@ -18,5 +18,5 @@ private:
 public:
     // Define constants similar to the Python script
     const std::string CONFIG_FILE_NAME = "cfg/area_scanner_68xx_ISK.cfg";
-    const int REFRESH_TIME = 1; // in seconds
+    const float REFRESH_TIME = 1; // in seconds
 };

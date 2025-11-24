@@ -74,13 +74,13 @@ int main(int argc, char *argv[])
     }
 
     std::cout << "Writing to file: " << filename << std::endl;
-    file << "numObj,x,y,z,velocity,timestamp\n";
+    file << "numObj,x,y,z,velocity,numObj_static,x_static,y_static,z_static,velocity_static,timestamp\n";
     file.close();
 
     try
     {
         IWRAPP app(cliPortName, dataPortName);
-        app.configureSensor(app.CONFIG_FILE_NAME);
+        // app.configureSensor(app.CONFIG_FILE_NAME);
         app.run(filename);
     }
     catch (const std::exception &e)
