@@ -14,6 +14,7 @@ import argparse
 from time import sleep
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+import pandas as pd
 
 # === Reuse helpers from the modular ORM system ===
 from sigivest.ble_query_helper import (
@@ -33,7 +34,7 @@ def run_experiment(test_name, test_description):
     input("Press Enter to start...")
     sleep(8) # Time for user to prepare for the experiment.
     print("Starting mmWave application...")
-    mmwave_app_path = os.path.join(os.path.dirname(__file__), "build", "IWRApp.exe")
+    mmwave_app_path = os.path.join(os.path.dirname(__file__), "build", "src", "SensorFusionApp.exe")
     process = subprocess.Popen([mmwave_app_path, '-o', mmwave_data_output])
     sleep(1)
 
@@ -53,9 +54,9 @@ def run_experiment(test_name, test_description):
         print("mmWave application terminated.")
 
         print("Querying BLE data and saving to CSV...")
-        # results = fetch_beacon_data(session, Base, test_name)
-        # ble_data_df = pd.DataFrame(results)
-        # ble_data_df.to_csv(ble_data_oputput, index=False)
+        results = fetch_beacon_data(session, Base, test_name)
+        ble_data_df = pd.DataFrame(results)
+        ble_data_df.to_csv(ble_data_oputput, index=False)
 
         print("Experiment completed successfully.")
         results_dir = os.path.join(os.path.dirname(__file__), "Results")
@@ -63,11 +64,13 @@ def run_experiment(test_name, test_description):
         output_dir = os.path.join(results_dir, test_name)
         os.makedirs(output_dir, exist_ok=True)
         os.rename(mmwave_data_output, os.path.join(output_dir, mmwave_data_output))
-        # os.rename(ble_data_oputput, os.path.join(output_dir, ble_data_oputput))
+        os.rename(ble_data_oputput, os.path.join(output_dir, ble_data_oputput))
 
     except Exception as e:
         print(f"An error occurred: {e}")
         session.rollback()
+        if process.poll() is None:
+            process.terminate()
         raise e
 
     finally:

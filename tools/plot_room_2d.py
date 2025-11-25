@@ -20,7 +20,7 @@ OBSTACLES = [
     },  # sala de reunioes
 ]
 
-POINTS_TO_CONSIDER = ["C2P2", "C2P3", "C2P4", "C2P5"]
+POINTS_TO_CONSIDER = ["C3P2", "C3P3", "C3P4", "C3P5", "C2P2", "C2P3", "C2P4", "C2P5"]
 
 def plot_obstacles(ax):
     """Desenha os obstáculos fixos (mesas e bancadas)."""
