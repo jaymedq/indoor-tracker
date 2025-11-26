@@ -64,7 +64,7 @@ def plot_colored_points(ax, x, y, times, cmap, label, size=10, marker='.'):
     if label == "Real":
         ax.scatter(x, y, marker=marker, c="black", s=size, label=label)
     else:
-        norm = mpl.colors.Normalize(vmin=times.min()-50, vmax=times.max())
+        norm = mpl.colors.Normalize(vmin=times.min(), vmax=times.max())
         ax.scatter(x, y, marker=marker, c=times, cmap=cmap, norm=norm, s=size, alpha=0.8, label=label)
 
 # Prepare trajectories
@@ -89,7 +89,7 @@ for _, row in data.iterrows():
         trajectories["ble"]["y"].append(row["y_ble"])
 
 # Extract time for gradient coloring
-times = data["timestamp"].astype(np.int64) // 10**9  # convert to seconds
+times = np.arange(len(data))
 
 
 def make_subplot(ax, title, to_plot):
