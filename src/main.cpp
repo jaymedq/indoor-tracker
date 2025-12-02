@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     try
     {
         IWRAPP app(cliPortName, dataPortName);
-        // app.configureSensor(app.CONFIG_FILE_NAME);
+        app.configureSensor(app.CONFIG_FILE_NAME);
         app.run(filename);
     }
     catch (const std::exception &e)
