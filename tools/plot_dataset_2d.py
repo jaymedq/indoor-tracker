@@ -7,7 +7,7 @@ from ast import literal_eval
 from plot_room_2d import plot_obstacles, plot_radar_fov, plot_experiment_points
 
 # Load data
-data = pd.read_csv("fused_dataset.csv", sep=";")
+data = pd.read_csv("dl_fused_output_enhanced.csv", sep=";")
 try:
     data["timestamp"] = pd.to_datetime(data["timestamp"], format="%Y-%m-%d %H:%M:%S")
 except:
@@ -54,6 +54,7 @@ if "centroid_xyz" in data.columns:
     data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
     data["real_xyz"] = data["real_xyz"].apply(eval)
     data["sensor_fused_xyz_filter"] = data["sensor_fused_xyz_filter"].apply(safe_eval_list)
+    data["dl_sensor_fused_xyz"] = data["dl_sensor_fused_xyz"].apply(safe_eval_list)
 else:
     data = process_centroids(data)
 
@@ -131,15 +132,17 @@ def make_subplot(ax, title, to_plot):
 
 
 # Create one figure with 3 subplots side by side
-fig, axes = plt.subplots(1, 3, figsize=(12, 4))  # wide figure with 3 panels
+fig, axes = plt.subplots(1, 4, figsize=(16, 4))  # wide figure with 3 panels
 
 make_subplot(axes[0], "mmWave Centroid estimate", ["centroid"])
-make_subplot(axes[1], "Sensor Fusion estimate", ["sensor_fused", "dl_sensor_fused"])
+make_subplot(axes[1], "Sensor Fusion estimate", ["sensor_fused"])
 make_subplot(axes[2], "BLE estimate", ["ble"])
+make_subplot(axes[3], "Deep Learning Fusion", ["dl_sensor_fused"])
 
 axes[0].legend(loc='lower right')
 axes[1].legend(loc='lower right')
 axes[2].legend(loc='lower right')
+axes[3].legend(loc='lower right')
 
 plt.tight_layout()
 plt.savefig("trajectories_comparison.png")

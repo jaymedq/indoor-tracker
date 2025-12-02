@@ -6,7 +6,7 @@ from constants import EXPERIMENT_POINTS, RADAR_PLACEMENT
 from plot_room_2d import POINTS_TO_CONSIDER
 
 # Load dataset
-data = pd.read_csv("fused_dataset.csv", sep=';')
+data = pd.read_csv("dl_fused_output_enhanced.csv", sep=';')
 
 
 def safe_eval_list(s):
@@ -25,6 +25,7 @@ data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
 data['sensor_fused_xyz'] = data['sensor_fused_xyz'].apply(eval)
 data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
+data['dl_sensor_fused_xyz'] = data['dl_sensor_fused_xyz'].apply(safe_eval_list)
 data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
@@ -37,6 +38,7 @@ def calculate_errors(group):
     mmw = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz_filter'].apply(np.array))
     fusion_points_without_sliding_window_median_filter = np.vstack(group['sensor_fused_xyz'].apply(np.array))
+    fusion_points_deep_learning = np.vstack(group['dl_sensor_fused_xyz'].apply(np.array))
     real_x = real_points[:, 0][0]
     real_y = real_points[0, 1]
 
@@ -44,11 +46,13 @@ def calculate_errors(group):
     mse_mmw = calculate_mse(real_points, mmw)
     mse_fusion = calculate_mse(real_points, fusion_points)
     mse_fusion_without_sliding_window_median_filter = calculate_mse(real_points, fusion_points_without_sliding_window_median_filter)
+    mse_fusion_points_deep_learning = calculate_mse(real_points, fusion_points_deep_learning)
 
     rmse_ble = calculate_rmse(real_points, ble_points)
     rmse_mmw = calculate_rmse(real_points, mmw)
     rmse_fusion = calculate_rmse(real_points, fusion_points)
     rmse_fusion_without_sliding_window_median_filter = calculate_rmse(real_points, fusion_points_without_sliding_window_median_filter)
+    rmse_fusion_points_deep_learning = calculate_rmse(real_points, fusion_points_deep_learning)
 
     return pd.Series({
         'MSE_BLE': mse_ble,
@@ -59,6 +63,8 @@ def calculate_errors(group):
         'RMSE_Fusion': rmse_fusion,
         'MSE_FusionWOSWMF': mse_fusion_without_sliding_window_median_filter,
         'RMSE_FusionWOSWMF': rmse_fusion_without_sliding_window_median_filter,
+        'MSE_DeepFusion': mse_fusion_points_deep_learning,
+        'RMSE_DeepFusion': rmse_fusion_points_deep_learning,
         'x': real_x,
         'y': real_y
     })
@@ -74,18 +80,20 @@ results.to_csv("error_by_distance.csv", index=False)
 
 # Plotting MSE by Distance
 plt.figure(figsize=(16, 9))
-methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion']
+methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion', 'DeepFusion']
 method_label_map = {
     "BLE": "BLE only",
     "MMW": "mmWave only",
     "FusionWOSWMF": "T2TF without SWMF",
-    "Fusion": "Proposed T2TF scheme"
+    "Fusion": "Proposed T2TF scheme",
+    "DeepFusion": "Deep Learning Fusion"
 }
 method_marker_map = {
     "BLE": 'd',
     "MMW": '*',
     "FusionWOSWMF": 'x',
     "Fusion": 'o',
+    "DeepFusion": '.',
 }
 for method in methods:
     plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method}')
