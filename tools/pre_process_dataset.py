@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from pykalman import KalmanFilter
 from sklearn.model_selection import ParameterGrid
@@ -8,7 +8,7 @@ from constants import RADAR_PLACEMENT, EXPERIMENT_POINTS
 
 # --- CONFIGURATION ---
 # BLE and mmWave dataset filenames
-BLE_DATASETS_PREFIX = "exported_"
+BLE_DATASETS_SUFIX = "_ble_data"
 MMW_DATASETS_SUFFIX = "_mmwave_data"
 TEST_NAMES = [
     # "T029_MMW_A1_BLE_C3P1", #OUT OF FOV, DISCARD!!!
@@ -62,7 +62,19 @@ TEST_NAMES = [
     "T136_MMW_A5_BLE_C2P2",
     "T137_MMW_A5_BLE_C2P3",
     "T138_MMW_A5_BLE_C2P4",
-    "T139_MMW_A5_BLE_C2P5"
+    "T139_MMW_A5_BLE_C2P5",
+    "T146_MMW_A5_BLE_C3P2",
+    "T147_MMW_A5_BLE_C3P3",
+    "T148_MMW_A5_BLE_C3P4",
+    "T149_MMW_A5_BLE_C3P5",
+    "T153_MMW_A5_BLE_C3P2",
+    "T154_MMW_A5_BLE_C3P3",
+    "T155_MMW_A5_BLE_C3P4",
+    "T156_MMW_A5_BLE_C3P5",
+    "T157_MMW_A5_BLE_C2P2",
+    "T158_MMW_A5_BLE_C2P3",
+    "T159_MMW_A5_BLE_C2P4",
+    "T160_MMW_A5_BLE_C2P5"
 ]
 FINAL_MERGED_FILENAME = "ble_mmwave_fusion_all.csv"
 CENTROID_OUTPUT_FILE = "output_transformed_centroid.csv"
@@ -72,6 +84,22 @@ def createTimeToDt(row):
     try:
         epoch_in_seconds = row["create_time"]
         return datetime.fromtimestamp(epoch_in_seconds).strftime("%Y-%m-%d %H:%M:%S")
+    except TypeError:
+        # **The Fix:** If it's not a number, assume it's a Timestamp object (or parseable string)
+        # Convert it to a Pandas Timestamp first (in case it's a string), then to a Python datetime.
+        ts = pd.to_datetime(row["create_time"])
+        
+        # Now use .to_pydatetime() which converts the Pandas Timestamp to a Python datetime object
+        dt_obj = ts.to_pydatetime()
+        if dt_obj.tzinfo == timezone.utc:
+        
+            # 2. Define the amount of time to reduce (3 hours)
+            three_hours = timedelta(hours=3)
+            
+            # 3. Perform the subtraction
+            dt_obj = dt_obj - three_hours
+
+        return dt_obj.strftime("%Y-%m-%d %H:%M:%S")
     except Exception as e:
         print(row)
         raise e
@@ -85,7 +113,7 @@ def fuse_datasets():
     BLE_DATASET_FILES = []
     MMWAVE_DATASET_FILES = []
     for test_name in TEST_NAMES:
-        ble_file = f"{BLE_DATASETS_PREFIX}{test_name}"
+        ble_file = f"{test_name}{BLE_DATASETS_SUFIX}"
         mmwave_file = f"{test_name}{MMW_DATASETS_SUFFIX}"
         BLE_DATASET_FILES.append(ble_file)
         MMWAVE_DATASET_FILES.append(mmwave_file)
@@ -100,7 +128,7 @@ def fuse_datasets():
         all_mmw_data = pd.concat([all_mmw_data, mmwave_data], ignore_index=True)
 
     for ble_file in BLE_DATASET_FILES:
-        ble_data = pd.read_csv(f"Results/{ble_file.replace(BLE_DATASETS_PREFIX,'')}/{ble_file}.txt")
+        ble_data = pd.read_csv(f"Results/{ble_file.replace(BLE_DATASETS_SUFIX,'')}/{ble_file}.csv")
         if ble_data.empty:
             print(f"No data found in {ble_file}. Skipping fusion for this file.")
             continue
@@ -133,6 +161,7 @@ def fuse_datasets():
     final_fused_dataset['ble_xyz'] = final_fused_dataset.apply(lambda row: (row["x_ble"], row["y_ble"], 1.78), axis=1)
     final_fused_dataset['ble_xyz_filter'] = final_fused_dataset.apply(lambda row: (row["x_ble_filter"], row["y_ble_filter"], np.nan if np.isnan([row["x_ble_filter"], row["y_ble_filter"]]).all() else 1.78), axis=1)
     final_fused_dataset['ble_xyz_replace_filter'] = final_fused_dataset.apply(lambda row: (row["x_ble_replace_filter"], row["y_ble_replace_filter"], 1.78), axis=1)
+    
     final_fused_dataset.to_csv(FINAL_MERGED_FILENAME, index=False)
     print(f"Final merged dataset saved as {FINAL_MERGED_FILENAME}")
     return final_fused_dataset
