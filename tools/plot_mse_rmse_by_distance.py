@@ -6,7 +6,7 @@ from constants import EXPERIMENT_POINTS, RADAR_PLACEMENT
 from plot_room_2d import POINTS_TO_CONSIDER
 
 # Load dataset
-data = pd.read_csv("dl_fused_output_enhanced.csv", sep=';')
+data = pd.read_csv("fused_dataset.csv", sep=';')
 
 
 def safe_eval_list(s):
@@ -25,21 +25,24 @@ data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
 data["real_xyz"] = data["real_xyz"].apply(eval)
 data['sensor_fused_xyz'] = data['sensor_fused_xyz'].apply(eval)
 data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
-data['dl_sensor_fused_xyz'] = data['dl_sensor_fused_xyz'].apply(safe_eval_list)
+if "dl_sensor_fused_xyz" in data.columns:
+    data['dl_sensor_fused_xyz'] = data['dl_sensor_fused_xyz'].apply(safe_eval_list)
 data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
-def calculate_distance(row):
-    return np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT)
-
-def calculate_errors(group):
+def calculate_errors_by_point(group):
+    # This function now receives a group for a specific 'experiment_point'
     real_points = np.vstack(group['real_xyz'].apply(np.array))
     ble_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
     mmw = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
     fusion_points = np.vstack(group['sensor_fused_xyz_filter'].apply(np.array))
     fusion_points_without_sliding_window_median_filter = np.vstack(group['sensor_fused_xyz'].apply(np.array))
-    fusion_points_deep_learning = np.vstack(group['dl_sensor_fused_xyz'].apply(np.array))
-    real_x = real_points[:, 0][0]
+    if "dl_sensor_fused_xyz" in group.columns:
+        fusion_points_deep_learning = np.vstack(group['dl_sensor_fused_xyz'].apply(np.array))
+    else:
+        fusion_points_deep_learning = real_points
+    # Real position (assuming all real_xyz are the same within a group)
+    real_x = real_points[0, 0]
     real_y = real_points[0, 1]
 
     mse_ble = calculate_mse(real_points, ble_points)
@@ -69,18 +72,22 @@ def calculate_errors(group):
         'y': real_y
     })
 
-# Calculate distances
-data['distance'] = data.apply(calculate_distance, axis=1)
+# Group by 'experiment_point' and calculate errors
+# 'experiment_point' is the string feature to use for grouping
+results = data.groupby('experiment_point').apply(calculate_errors_by_point).reset_index()
 
-# Group by discrete distance and calculate errors
-results = data.groupby('distance').apply(calculate_errors).reset_index()
+# Sort results by the experiment point string for consistent plotting order
+results = results.sort_values(by='experiment_point').reset_index(drop=True)
 
-# Save results to CSV
-results.to_csv("error_by_distance.csv", index=False)
+# Save results to CSV (updated filename)
+results.to_csv("error_by_experiment_point.csv", index=False)
 
-# Plotting MSE by Distance
-plt.figure(figsize=(16, 9))
-methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion', 'DeepFusion']
+# Get the point labels for the x-axis
+point_labels = results['experiment_point'].tolist()
+
+# Define methods and map for plotting
+# methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion', 'DeepFusion']
+methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion']
 method_label_map = {
     "BLE": "BLE only",
     "MMW": "mmWave only",
@@ -95,27 +102,39 @@ method_marker_map = {
     "Fusion": 'o',
     "DeepFusion": '.',
 }
-for method in methods:
-    plt.plot(results['distance'], results[f'MSE_{method}'], marker='o', label=f'{method}')
-    # print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
-    # print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
 
-# plt.title('Mean Squared Error (MSE) by Distance')
-plt.xlabel('Distance', fontsize = 14)
-plt.ylabel('MSE', fontsize=14)
-plt.legend()
-plt.grid(True)
-plt.show()
 
-# Plotting RMSE by Distance
-fig, ax = plt.subplots(figsize=(4.5,3.5))
+# ## Plotting MSE by Experiment Point (Line Plot)
+
+# plt.figure(figsize=(16, 9))
+# x_positions = np.arange(len(point_labels))
+
+# for method in methods:
+#     plt.plot(x_positions, results[f'MSE_{method}'], marker=method_marker_map.get(method, 'o'), 
+#              linestyle='-', label=method_label_map.get(method, method))
+#     # print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
+#     # print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
+
+# # plt.title('Mean Squared Error (MSE) by Experiment Point')
+# plt.xlabel('Experiment Point', fontsize=14)
+# plt.ylabel('MSE', fontsize=14)
+# plt.xticks(x_positions, point_labels, rotation=45, ha='right') # Set x-ticks to point labels
+# plt.legend()
+# plt.grid(True)
+# plt.tight_layout()
+# plt.show()
+
+
+## Plotting RMSE by Experiment Point (Bar Chart)
+
+fig, ax = plt.subplots(figsize=(12, 6)) # Adjusted figsize for better bar visualization
 multiplier = 0
-width = 0.2  # the width of the bars
+width = 0.15
 x = np.arange(len(results))  # the label locations
+
 for method in methods:
     offset = width * multiplier
     rects = ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
-    ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
     multiplier += 1
     print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
     print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
@@ -126,68 +145,17 @@ print(f'Absolute improvement in RMSE from MMW:', results['RMSE_MMW'].mean() - re
 print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_BLE'].mean()))*100}%")
 print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_BLE'].mean()))*100}%")
 
-x_labels = [f'P{i}' for i in range(len(results))]
-ordered_points = []
-filtered_experiment_points = {k: v for k, v in EXPERIMENT_POINTS.items() if k in POINTS_TO_CONSIDER}
-for point in filtered_experiment_points:
-    dist = np.linalg.norm(np.array(filtered_experiment_points[point]) - np.array(RADAR_PLACEMENT))
-    ordered_points.append((point, dist))
-ordered_points.sort(key=lambda x: x[1])
-x_labels = [point[0] for point in ordered_points]
-
-# plt.title('Root Mean Squared Error (RMSE) by Distance')
-ax.set_xlabel('Distance [m]', fontsize=14)
+# plt.title('Root Mean Squared Error (RMSE) by Experiment Point')
+ax.set_xlabel('Experiment Point', fontsize=14)
 ax.set_ylabel('RMSE [m]', fontsize=14)
-ax.set_ylim((0,1.4))
-ax.set_xticks(x + width * (len(methods) - 1) / 2, x_labels)
-ax.set_xticklabels(x_labels)
+ax.set_ylim((0, 1.4))
+# Set x-ticks to be centered under the groups of bars and labeled with point_labels
+ax.set_xticks(x + width * (len(methods) - 1) / 2)
+ax.set_xticklabels(point_labels, rotation=45, ha='right')
 ax.legend(loc='upper left')
 ax.grid(True, axis='y', linestyle='--', alpha=0.6)
 fig.tight_layout()
 fig.show()
 fig.savefig("Resultado.eps", format='eps')
 fig.savefig("Resultado.png")
-
-from matplotlib import cm
-from scipy.interpolate import griddata
-
-# --- 3D Surface Plot of RMSE ---
-
-fig = plt.figure(figsize=plt.figaspect(0.5))
-methods = ['BLE', 'MMW', 'Fusion']
-
-# Add small noise to y to avoid singular matrix error in griddata
-results['y'] += np.random.normal(0, 1e-4, len(results['y']))
-
-# Prepare data for interpolation
-points = results[['x', 'y']].values
-grid_x, grid_y = np.mgrid[
-    0:9:100j,
-    results['y'].min():results['y'].max():100j
-]
-
-for i, method in enumerate(methods):
-    ax = fig.add_subplot(1, 3, i + 1, projection='3d')
-    values = results[f'RMSE_{method}'].values
-
-    # Interpolate the Z values (RMSE) onto the grid
-    grid_z = griddata(points, values, (grid_x, grid_y), method='cubic')
-
-    # Plot the surface
-    surf = ax.plot_surface(grid_x, grid_y, grid_z, cmap=cm.viridis_r, linewidth=0, antialiased=False)
-
-    # Add a color bar which maps values to colors
-    fig.colorbar(surf, shrink=0.4, location='left')
-
-    # Formatting the plot
-    ax.set_title(f'3D Surface of {method} RMSE', fontsize=14, pad=20)
-    ax.set_xlabel('X Position (m)', fontsize=10, labelpad=10)
-    ax.set_ylabel('Y Position (m)', fontsize=10, labelpad=10)
-    ax.set_zlabel('RMSE (m)', fontsize=10, labelpad=10)
-
-    # Adjust view angle
-    ax.view_init(elev=35, azim=-45)
-
-plt.tight_layout(w_pad=7)
-plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.3, hspace=0.5)
-plt.show()
+print("Figure saved to Resultado.png")
