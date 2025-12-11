@@ -8,16 +8,13 @@ from plot_room_2d import POINTS_TO_CONSIDER
 # Load dataset
 data = pd.read_csv("fused_dataset.csv", sep=';')
 
-
 def safe_eval_list(s):
     """
     Safely evaluate a string representation of a list, correctly handling 'nan'.
     """
     try:
-        # Provide a scope to eval where 'nan' is defined as numpy.nan
         return eval(s, {"nan": np.nan})
     except NameError:
-        # If eval fails for any reason, return a list of NaNs
         return [np.nan, np.nan, np.nan]
 
 # Ensure stringified lists are parsed correctly
@@ -31,7 +28,6 @@ data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
 data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
 
 def calculate_errors_by_point(group):
-    # This function now receives a group for a specific 'experiment_point'
     real_points = np.vstack(group['real_xyz'].apply(np.array))
     ble_points = np.column_stack((group['x_ble'], group['y_ble'], np.full(len(group), 1.78)))
     mmw = np.column_stack((group['mmw_x'], group['mmw_y'], np.full(len(group), 1.78)))
@@ -41,7 +37,6 @@ def calculate_errors_by_point(group):
         fusion_points_deep_learning = np.vstack(group['dl_sensor_fused_xyz'].apply(np.array))
     else:
         fusion_points_deep_learning = real_points
-    # Real position (assuming all real_xyz are the same within a group)
     real_x = real_points[0, 0]
     real_y = real_points[0, 1]
 
@@ -72,17 +67,9 @@ def calculate_errors_by_point(group):
         'y': real_y
     })
 
-# Group by 'experiment_point' and calculate errors
-# 'experiment_point' is the string feature to use for grouping
 results = data.groupby('experiment_point').apply(calculate_errors_by_point).reset_index()
-
-# Sort results by the experiment point string for consistent plotting order
 results = results.sort_values(by='experiment_point').reset_index(drop=True)
-
-# Save results to CSV (updated filename)
 results.to_csv("error_by_experiment_point.csv", index=False)
-
-# Get the point labels for the x-axis
 point_labels = results['experiment_point'].tolist()
 
 # Define methods and map for plotting
@@ -103,49 +90,36 @@ method_marker_map = {
     "DeepFusion": '.',
 }
 
+def get_hallway_index(point_label):
+    """Extracts the hallway index (X in CXPY) from the experiment point label."""
+    try:
+        # Find 'C' and 'P' and extract the number in between
+        start_index = point_label.find('C') + 1
+        end_index = point_label.find('P')
+        return int(point_label[start_index:end_index])
+    except:
+        return np.nan
 
-# ## Plotting MSE by Experiment Point (Line Plot)
+results['hallway_index'] = results['experiment_point'].apply(get_hallway_index)
 
-# plt.figure(figsize=(16, 9))
-# x_positions = np.arange(len(point_labels))
+unique_hallways = sorted(results['hallway_index'].dropna().unique())
 
-# for method in methods:
-#     plt.plot(x_positions, results[f'MSE_{method}'], marker=method_marker_map.get(method, 'o'), 
-#              linestyle='-', label=method_label_map.get(method, method))
-#     # print(f'MIN MSE_{method}:', np.min(results[f'MSE_{method}']))
-#     # print(f'MAX MSE_{method}:', np.max(results[f'MSE_{method}']))
-
-# # plt.title('Mean Squared Error (MSE) by Experiment Point')
-# plt.xlabel('Experiment Point', fontsize=14)
-# plt.ylabel('MSE', fontsize=14)
-# plt.xticks(x_positions, point_labels, rotation=45, ha='right') # Set x-ticks to point labels
-# plt.legend()
-# plt.grid(True)
-# plt.tight_layout()
-# plt.show()
-
-
-## Plotting RMSE by Experiment Point (Bar Chart)
-
-fig, ax = plt.subplots(figsize=(12, 6)) # Adjusted figsize for better bar visualization
+fig, ax = plt.subplots(figsize=(12, 6))
 multiplier = 0
 width = 0.15
 x = np.arange(len(results))  # the label locations
 
 for method in methods:
     offset = width * multiplier
-    rects = ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+    ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
     multiplier += 1
-    print(f'MIN RMSE_{method}:', np.min(results[f'RMSE_{method}']))
-    print(f'MAX RMSE_{method}:', np.max(results[f'RMSE_{method}']))
-
 
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
 print(f'Absolute improvement in RMSE from MMW:', results['RMSE_MMW'].mean() - results['RMSE_Fusion'].mean())
-print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_BLE'].mean()))*100}%")
-print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_BLE'].mean()))*100}%")
+print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_BLE'].mean()))*100:.2f}%")
+print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_BLE'].mean()))*100:.2f}%")
 
-# plt.title('Root Mean Squared Error (RMSE) by Experiment Point')
+ax.set_title('Root Mean Squared Error (RMSE) by Experiment Point', fontsize=16)
 ax.set_xlabel('Experiment Point', fontsize=14)
 ax.set_ylabel('RMSE [m]', fontsize=14)
 ax.set_ylim((0, 1.4))
@@ -155,7 +129,49 @@ ax.set_xticklabels(point_labels, rotation=45, ha='right')
 ax.legend(loc='upper left')
 ax.grid(True, axis='y', linestyle='--', alpha=0.6)
 fig.tight_layout()
-fig.show()
+
+# Save the figure with a dedicated filename for ALL points
 fig.savefig("Resultado.eps", format='eps')
 fig.savefig("Resultado.png")
-print("Figure saved to Resultado.png")
+print("Figure for All Points saved to Resultado.png")
+
+for hallway in unique_hallways:
+    hallway_data = results[results['hallway_index'] == hallway].copy()
+    hallway_point_labels = hallway_data['experiment_point'].tolist()
+
+    if hallway_data.empty:
+        print(f"No data for Hallway C{hallway}. Skipping.")
+        continue
+
+    fig, ax = plt.subplots(figsize=(10, 6)) # New figure for each hallway
+    multiplier = 0
+    width = 0.15
+    x = np.arange(len(hallway_data))  
+    for method in methods:
+        offset = width * multiplier
+        ax.bar(x + offset, hallway_data[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+        multiplier += 1
+
+    print(f'\n--- Hallway C{hallway} RMSE Summary ---')
+    for method in methods:
+        print(f'Mean RMSE_{method} for C{hallway}:', hallway_data[f'RMSE_{method}'].mean())
+
+    ax.set_title(f'Root Mean Squared Error (RMSE) by Experiment Point - Hallway C{hallway}', fontsize=16)
+    ax.set_xlabel('Experiment Point', fontsize=14)
+    ax.set_ylabel('RMSE [m]', fontsize=14)
+    ax.set_ylim((0, 1.4)) # Keep consistent Y limit
+    
+    ax.set_xticks(x + width * (len(methods) - 1) / 2)
+    ax.set_xticklabels(hallway_point_labels, rotation=45, ha='right')
+    ax.legend(loc='upper left')
+    ax.grid(True, axis='y', linestyle='--', alpha=0.6)
+    
+    fig.tight_layout()
+    
+    filename_eps = f"Resultado_Hallway_C{hallway}.eps"
+    filename_png = f"Resultado_Hallway_C{hallway}.png"
+    fig.savefig(filename_eps, format='eps')
+    fig.savefig(filename_png)
+    print(f"Figure for Hallway C{hallway} saved to {filename_png}")
+
+plt.show()
