@@ -151,6 +151,7 @@ def fuse_datasets():
             if f"BLE_{point}" in ble_file:
                 fusion_data["real_xyz"] = [EXPERIMENT_POINTS[point]] * len(fusion_data)
                 fusion_data["distance"] = np.linalg.norm(np.array(EXPERIMENT_POINTS[point]) - RADAR_PLACEMENT)
+                fusion_data["experiment_point"] = point
 
         BLE_MMWAVE_FUSION_FILENAME = f"{ble_file}_mmwave_fusion.csv"
         fusion_data.to_csv(BLE_MMWAVE_FUSION_FILENAME, index=False)
