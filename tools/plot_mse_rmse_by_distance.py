@@ -64,13 +64,14 @@ def calculate_errors_by_point(group):
         'MSE_DeepFusion': mse_fusion_points_deep_learning,
         'RMSE_DeepFusion': rmse_fusion_points_deep_learning,
         'x': real_x,
-        'y': real_y
+        'y': real_y,
+        "samples": len(group)
     })
 
 results = data.groupby('experiment_point').apply(calculate_errors_by_point).reset_index()
 results = results.sort_values(by='experiment_point').reset_index(drop=True)
 results.to_csv("error_by_experiment_point.csv", index=False)
-point_labels = results['experiment_point'].tolist()
+point_labels = [f"{point.experiment_point}\nN={point.samples}" for point in results.itertuples(index=False)]
 
 # Define methods and map for plotting
 # methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion', 'DeepFusion']
@@ -111,7 +112,8 @@ x = np.arange(len(results))  # the label locations
 
 for method in methods:
     offset = width * multiplier
-    ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+    rects = ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+    ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
     multiplier += 1
 
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())

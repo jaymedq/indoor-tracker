@@ -55,135 +55,142 @@ def safe_eval_list(s):
         # If eval fails for any reason, return a list of NaNs
         return [np.nan, np.nan, np.nan]
 
+thresholds = np.arange(0.05, 0.7, 0.05)
+window_sizes = [3, 5, 7, 9, 11, 13, 15, 17] #must be odd for median filter
+
 def main():
     """Main function to run the threshold experiment."""
     python_executable = sys.executable
-    thresholds = np.arange(0.05, 0.7, 0.05)
+
     all_results = []
 
     # These are the files processed by the original .bat file
     test_files = [
-        # "Results/T029_MMW_A1_BLE_C3P1/exported_T029_MMW_A1_BLE_C3P1.txt",
-        # "Results/T030_MMW_A1_BLE_C3P2/exported_T030_MMW_A1_BLE_C3P2.txt",
-        # "Results/T031_MMW_A1_BLE_C3P3/exported_T031_MMW_A1_BLE_C3P3.txt",
-        # "Results/T032_MMW_A1_BLE_C3P4/exported_T032_MMW_A1_BLE_C3P4.txt",
-        # "Results/T033_MMW_A1_BLE_C3P5/exported_T033_MMW_A1_BLE_C3P5.txt",
-        # "Results/T034_MMW_A1_BLE_C4PA/exported_T034_MMW_A1_BLE_C4PA.txt",
-        # "Results/T035_MMW_A1_BLE_CVP1/exported_T035_MMW_A1_BLE_CVP1.txt",
-        # "Results/T036_MMW_A1_BLE_CVP2/exported_T036_MMW_A1_BLE_CVP2.txt",
-        # "Results/T037_MMW_A1_BLE_CVP3/exported_T037_MMW_A1_BLE_CVP3.txt",
-        # "Results/T038_MMW_A1_BLE_CVP4/exported_T038_MMW_A1_BLE_CVP4.txt",
-        # "Results/T038_MMW_A1_BLE_CVP5/exported_T038_MMW_A1_BLE_CVP5.txt",
-        # "Results/T040_MMW_A1_BLE_C4PV/exported_T040_MMW_A1_BLE_C4PV.txt",
-        # "Results/T047_MMW_A1_BLE_C2P1/exported_T047_MMW_A1_BLE_C2P1.txt",
-        # "Results/T048_MMW_A1_BLE_C2P2/exported_T048_MMW_A1_BLE_C2P2.txt",
-        # "Results/T049_MMW_A1_BLE_C2P3/exported_T049_MMW_A1_BLE_C2P3.txt",
-        # "Results/T050_MMW_A1_BLE_C2P4/exported_T050_MMW_A1_BLE_C2P4.txt",
-        # "Results/T051_MMW_A1_BLE_C2P5/exported_T051_MMW_A1_BLE_C2P5.txt",
-        # "Results/T052_MMW_A1_BLE_C4P4/exported_T052_MMW_A1_BLE_C4P4.txt",
-        # "Results/T053_MMW_A1_BLE_C4P5/exported_T053_MMW_A1_BLE_C4P5.txt",
-        # "Results/T054_MMW_A1_BLE_C4P6/exported_T054_MMW_A1_BLE_C4P6.txt",
-        # "Results/T055_MMW_A1_BLE_C3P5/exported_T055_MMW_A1_BLE_C3P5.txt",
-        # "Results/T056_MMW_A1_BLE_C3P4/exported_T056_MMW_A1_BLE_C3P4.txt",
-        # "Results/T057_MMW_A1_BLE_C3P3/exported_T057_MMW_A1_BLE_C3P3.txt",
-        # "Results/T058_MMW_A1_BLE_C3P2/exported_T058_MMW_A1_BLE_C3P2.txt",
-        # "Results/T059_MMW_A1_BLE_C4P1/exported_T059_MMW_A1_BLE_C4P1.txt",
-        # "Results/T060_MMW_A1_BLE_C1P5/exported_T060_MMW_A1_BLE_C1P5.txt",
-        # "Results/T100_MMW_A5_BLE_C2P2/exported_T100_MMW_A5_BLE_C2P2.txt",
-        # "Results/T100_MMW_A5_BLE_C2P3/exported_T100_MMW_A5_BLE_C2P3.txt",
-        # "Results/T102_MMW_A5_BLE_C2P4/exported_T102_MMW_A5_BLE_C2P4.txt",
-        # "Results/T103_MMW_A5_BLE_C2P5/exported_T103_MMW_A5_BLE_C2P5.txt",
-        # "Results/T104_MMW_A5_BLE_C4P4/exported_T104_MMW_A5_BLE_C4P4.txt",
-        # "Results/T105_MMW_A5_BLE_C3P5/exported_T105_MMW_A5_BLE_C3P5.txt",
-        # "Results/T106_MMW_A5_BLE_C3P4/exported_T106_MMW_A5_BLE_C3P4.txt",
-        # "Results/T107_MMW_A5_BLE_C3P3/exported_T107_MMW_A5_BLE_C3P3.txt",
-        # "Results/T108_MMW_A5_BLE_C1P4/exported_T108_MMW_A5_BLE_C1P4.txt",
-        # "Results/T108_MMW_A5_BLE_C1P5/exported_T108_MMW_A5_BLE_C1P5.txt",
-        # "Results/T110_MMW_A5_BLE_C1P3/exported_T110_MMW_A5_BLE_C1P3.txt",
-        "Results/T136_MMW_A5_BLE_C2P2/exported_T136_MMW_A5_BLE_C2P2.txt",
-        "Results/T137_MMW_A5_BLE_C2P3/exported_T137_MMW_A5_BLE_C2P3.txt",
-        "Results/T138_MMW_A5_BLE_C2P4/exported_T138_MMW_A5_BLE_C2P4.txt",
-        "Results/T139_MMW_A5_BLE_C2P5/exported_T139_MMW_A5_BLE_C2P5.txt"
+        "Results/T136_MMW_A5_BLE_C2P2/T136_MMW_A5_BLE_C2P2_ble_data.csv",
+        "Results/T137_MMW_A5_BLE_C2P3/T137_MMW_A5_BLE_C2P3_ble_data.csv",
+        "Results/T138_MMW_A5_BLE_C2P4/T138_MMW_A5_BLE_C2P4_ble_data.csv",
+        "Results/T139_MMW_A5_BLE_C2P5/T139_MMW_A5_BLE_C2P5_ble_data.csv",
+        "Results/T146_MMW_A5_BLE_C3P2/T146_MMW_A5_BLE_C3P2_ble_data.csv",
+        "Results/T147_MMW_A5_BLE_C3P3/T147_MMW_A5_BLE_C3P3_ble_data.csv",
+        "Results/T148_MMW_A5_BLE_C3P4/T148_MMW_A5_BLE_C3P4_ble_data.csv",
+        "Results/T149_MMW_A5_BLE_C3P5/T149_MMW_A5_BLE_C3P5_ble_data.csv",
+        "Results/T153_MMW_A5_BLE_C3P2/T153_MMW_A5_BLE_C3P2_ble_data.csv",
+        "Results/T154_MMW_A5_BLE_C3P3/T154_MMW_A5_BLE_C3P3_ble_data.csv",
+        "Results/T155_MMW_A5_BLE_C3P4/T155_MMW_A5_BLE_C3P4_ble_data.csv",
+        "Results/T156_MMW_A5_BLE_C3P5/T156_MMW_A5_BLE_C3P5_ble_data.csv",
+        "Results/T157_MMW_A5_BLE_C2P2/T157_MMW_A5_BLE_C2P2_ble_data.csv",
+        "Results/T158_MMW_A5_BLE_C2P3/T158_MMW_A5_BLE_C2P3_ble_data.csv",
+        "Results/T159_MMW_A5_BLE_C2P4/T159_MMW_A5_BLE_C2P4_ble_data.csv",
+        "Results/T160_MMW_A5_BLE_C2P5/T160_MMW_A5_BLE_C2P5_ble_data.csv"
     ]
 
-    for threshold in thresholds:
-        threshold = round(threshold, 2)
-        print(f"--- Running experiment for threshold: {threshold} ---")
+    for window in window_sizes:
+        print(f"- Starting experiment for WINDOW size: {window}")
+        
+        for threshold in thresholds:
+            threshold = round(threshold, 2)
+            print(f"- Running experiment for threshold: {threshold}")
+            print("Running filter scripts...")
+            for file_path in test_files:
+                command = [
+                    python_executable,
+                    "tools/filter_dataset_columns.py",
+                    "--input_file", file_path,
+                    "--columns", "x", "y",
+                    "--threshold", str(threshold),
+                    "--window", str(window)
+                ]
+                run_command(command)
 
-        # 1. Run filter scripts
-        print("Running filter scripts...")
-        for file_path in test_files:
-            command = [
-                python_executable,
-                "tools/filter_dataset_columns.py",
-                "--input_file", file_path,
-                "--columns", "x", "y",
-                "--threshold", str(threshold)
-            ]
-            run_command(command)
+            # 2. Run pre-process and fuse scripts
+            print("Running pre-process and fuse scripts...")
+            run_command([python_executable, "tools/pre_process_dataset.py"])
+            run_command([python_executable, "tools/fuse_sensor_data.py"])
 
-        # 2. Run pre-process and fuse scripts
-        print("Running pre-process and fuse scripts...")
-        run_command([python_executable, "tools/pre_process_dataset.py"])
-        run_command([python_executable, "tools/fuse_sensor_data.py"])
-
-        # 3. Calculate RMSE and store results
-        print("Calculating RMSE...")
-        try:
-            data = pd.read_csv("fused_dataset.csv", sep=';')
-            data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
-            data["real_xyz"] = data["real_xyz"].apply(eval)
-            data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
-            data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
-            data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
-            
-            data['distance'] = data.apply(lambda row: np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT), axis=1)
-            
-            results = data.groupby('distance').apply(calculate_errors).reset_index()
-            results['threshold'] = threshold
-            all_results.append(results)
-        except FileNotFoundError:
-            print("Could not find fused_dataset.csv. Skipping RMSE calculation for this threshold.")
-        except Exception as e:
-            print(f"An error occurred during RMSE calculation: {e}")
-            print("Reverting changes...")
-            run_command(["git", "checkout", "--", "Results/"])
-            raise e
+            # 3. Calculate RMSE and store results
+            print("Calculating RMSE...")
+            try:
+                data = pd.read_csv("fused_dataset.csv", sep=';')
+                data["centroid_xyz"] = data["centroid_xyz"].apply(eval)
+                data["real_xyz"] = data["real_xyz"].apply(eval)
+                data['sensor_fused_xyz_filter'] = data['sensor_fused_xyz_filter'].apply(safe_eval_list)
+                data['mmw_x'] = data['centroid_xyz'].apply(lambda x: x[0])
+                data['mmw_y'] = data['centroid_xyz'].apply(lambda y: y[1])
+                
+                data['distance'] = data.apply(lambda row: np.linalg.norm(np.array(row["real_xyz"]) - RADAR_PLACEMENT), axis=1)
+                
+                results = data.groupby('distance').apply(calculate_errors).reset_index()
+                results['threshold'] = threshold
+                results['window'] = window
+                all_results.append(results)
+            except FileNotFoundError:
+                print("Could not find fused_dataset.csv. Skipping RMSE calculation for this threshold.")
+            except Exception as e:
+                print(f"An error occurred during RMSE calculation: {e}")
+                print("Reverting changes...")
+                run_command(["git", "checkout", "--", "Results/"])
+                raise e
 
         # 4. Revert changes
         print("Reverting changes...")
         run_command(["git", "checkout", "--", "Results/"])
-
+    
     # 5. Combine and save all results
-    print("Saving combined results...")
+    print("\nSaving combined results...")
     if all_results:
         final_results = pd.concat(all_results, ignore_index=True)
-        final_results.to_csv("threshold_experiment_results.csv", index=False)
-        final_results = pd.read_csv("threshold_experiment_results.csv")
-
-        # 6. Plot errors by distance
-        print("Plotting results...")
-        plt.figure(figsize=(4.5,3.5))
-        colors = plt.cm.jet(np.linspace(0, 1, len(thresholds)))
+        final_results.to_csv("threshold_window_experiment_results.csv", index=False)
         
-        distance_data = final_results[final_results['distance'] == final_results['distance'][0]]
-        fig, ax1 = plt.subplots()
-        ax2 = ax1.twinx()
+        # 6. Plot errors by distance (now iterating over window sizes)
+        print("Plotting results...")
+        
+        # Get the first distance value to plot (as in your original script)
+        first_distance = final_results['distance'].min() # Or use a specific distance
+        
+        for window in window_sizes:
+            window_data = final_results[final_results['window'] == window]
+            distance_data = window_data[window_data['distance'] == first_distance]
+            
+            if distance_data.empty:
+                 print(f"No data to plot for Window {window} at distance {first_distance}")
+                 continue
+                 
+            # Create a new figure for each window size
+            fig, ax1 = plt.subplots(figsize=(4.5, 3.5))
+            ax2 = ax1.twinx()
 
-        ax2.plot(distance_data['threshold']*100, distance_data['filter_replace_rate'], 'r-', marker='d', label= 'Discard rate')
-        ax1.plot(distance_data['threshold']*100, distance_data['RMSE_Fusion'], 'b-', marker='o', label= 'RMSE')
+            # Plotting lines
+            # Discard Rate (Red, secondary Y-axis)
+            ax2.plot(distance_data['threshold'] * 100, 
+                     distance_data['filter_replace_rate'], 
+                     'r-', marker='d', 
+                     label='Discard rate')
+                     
+            # RMSE (Blue, primary Y-axis)
+            ax1.plot(distance_data['threshold'] * 100, 
+                     distance_data['RMSE_Fusion'], 
+                     'b-', marker='o', 
+                     label='RMSE')
 
-        # plt.title(f"RMSE (Fusion) by Threshold for Distance = {final_results['distance'][2]}")
-        ax1.set_xlabel('Threshold (cm)', fontsize=14)
-        ax1.set_ylabel('RMSE (m)', color='b', fontsize=14)
-        ax2.set_ylabel('Discard rate (%)', color='r', fontsize=14)
-        # fig.legend(loc="upper right", bbox_to_anchor=(0.9, 0.8))
-        ax1.grid(True)
-        ax1.tick_params()
-        fig.tight_layout()
-        fig.savefig("RMSE_DiscardRate.eps", format = 'eps')
-        fig.savefig("RMSE_DiscardRate.png")
-        # plt.show() # Commented out to prevent blocking in a non-interactive environment
+            ax1.set_title(f"RMSE vs Discard Rate (Window = {window})", fontsize=14)
+            ax1.set_xlabel('Threshold (cm)', fontsize=12)
+            ax1.set_ylabel('RMSE (m)', color='b', fontsize=12)
+            ax2.set_ylabel('Discard rate (%)', color='r', fontsize=12)
+            
+            # Combine legends and display
+            lines, labels = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax2.legend(lines + lines2, labels + labels2, loc='upper right')
+            
+            ax1.grid(True)
+            ax1.tick_params(axis='y', colors='b')
+            ax2.tick_params(axis='y', colors='r')
+            fig.tight_layout()
+            
+            # Save the figure with window size in the filename
+            fig.savefig(f"RMSE_DiscardRate_W{window}.eps", format='eps')
+            fig.savefig(f"RMSE_DiscardRate_W{window}.png")
+            print(f"Plot saved to RMSE_DiscardRate_W{window}.png")
     else:
         print("No results were generated.")
 

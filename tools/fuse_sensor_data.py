@@ -5,7 +5,7 @@ import pandas as pd
 from constants import RADAR_PLACEMENT
 
 # This "jitter" is added to the variance to prevent singular matrices
-REGULARIZATION_FACTOR = 1e-9
+REGULARIZATION_FACTOR = 0
 
 def track_to_track_fusion(mean1, cov1, mean2, cov2):
     """
@@ -34,12 +34,14 @@ df = pd.read_csv("FUSAO_PROCESSADA.csv", sep=";")
 # Drop np.isnan values - Making this check more comprehensive
 # df: pd.DataFrame = df.dropna(subset=['x_ble', 'y_ble']).reset_index(drop=True)
 df["centroid_xyz"] = df["centroid_xyz"].apply(eval)
+if "centroid_xyz_replace_filter" in df.columns:
+    df["centroid_xyz_replace_filter"] = df["centroid_xyz_replace_filter"].apply(eval)
 df["ble_xyz"] = df["ble_xyz"].apply(eval)
 df["ble_xyz_filter"] = df["ble_xyz_filter"].apply(safe_eval_list)
 df["real_xyz"] = df["real_xyz"].apply(eval)
 
 # <<< MODIFIED AND FINAL VERSION OF THE FUSION FUNCTION >>>
-def fuse_sensor_data(row, mmw_cov, ble_cov, mmwave_column="centroid_xyz", ble_column="ble_xyz_replace_filter"):
+def fuse_sensor_data(row, mmw_cov, ble_cov, mmwave_column="centroid_xyz", ble_column="ble_xyz_filter"):
     """
     Robustly fuses sensor data, handling NaN inputs gracefully.
     """

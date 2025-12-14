@@ -48,17 +48,17 @@ TEST_NAMES = [
     # "T108_MMW_A5_BLE_C1P4",
     # "T108_MMW_A5_BLE_C1P5",
     # "T110_MMW_A5_BLE_C1P3"
-    # "T125_MMW_A5_BLE_C2P2",
-    # "T126_MMW_A5_BLE_C2P3",
-    # "T127_MMW_A5_BLE_C2P4",
-    # "T128_MMW_A5_BLE_C2P5",
     # "T129_MMW_A5_BLE_C4P4",
-    # "T130_MMW_A5_BLE_C3P5",
-    # "T131_MMW_A5_BLE_C3P4",
-    # "T132_MMW_A5_BLE_C3P3",
     # "T133_MMW_A5_BLE_C1P5",
     # "T134_MMW_A5_BLE_C1P4",
     # "T135_MMW_A5_BLE_C1P3",
+    "T125_MMW_A5_BLE_C2P2",
+    "T126_MMW_A5_BLE_C2P3",
+    "T127_MMW_A5_BLE_C2P4",
+    "T128_MMW_A5_BLE_C2P5",
+    "T130_MMW_A5_BLE_C3P5",
+    "T131_MMW_A5_BLE_C3P4",
+    "T132_MMW_A5_BLE_C3P3",
     "T136_MMW_A5_BLE_C2P2",
     "T137_MMW_A5_BLE_C2P3",
     "T138_MMW_A5_BLE_C2P4",
@@ -122,9 +122,13 @@ def fuse_datasets():
 
     for mmwave_file in MMWAVE_DATASET_FILES:
         mmwave_data = pd.read_csv(f"Results/{mmwave_file.replace(MMW_DATASETS_SUFFIX,'')}/{mmwave_file}.csv")
-        mmwave_data["timestamp"] = pd.to_datetime(
-            mmwave_data["timestamp"], format="%d/%m/%Y %H:%M:%S"
-        )
+        try:
+            mmwave_data["timestamp"] = pd.to_datetime(
+                mmwave_data["timestamp"], format="%d/%m/%Y %H:%M:%S"
+            )
+        except ValueError as e:
+            print(f"Results/{mmwave_file.replace(MMW_DATASETS_SUFFIX,'')}/{mmwave_file}.csv parsing failed.")
+            raise e
         all_mmw_data = pd.concat([all_mmw_data, mmwave_data], ignore_index=True)
 
     for ble_file in BLE_DATASET_FILES:
@@ -177,6 +181,12 @@ def transform_coordinates(row):
     ])
     return [transformed[0].tolist(), transformed[1].tolist(), transformed[2].tolist()]
 
+def transform_coordinates_filter(row):
+    
+    return [RADAR_PLACEMENT[0] + row['centroid_x_replace_filter'],  # Add radar x
+    RADAR_PLACEMENT[1] - row['centroid_y_replace_filter'],  # Subtract radar y
+    RADAR_PLACEMENT[2] + row['centroid_z_replace_filter']]   # Add radar z
+
 def drop_static_points(row):
     # there are n x,y,z,velocity points in each row
     velocities = np.array(row['velocity'])
@@ -205,20 +215,36 @@ def calculate_centroid(row):
     centroid_z = round(np.mean(row['z']), 2)
     return [centroid_x, centroid_y, centroid_z]
 
-
-def process_centroids(fusion_data):
+def process_coordinates_transormation(fusion_data):
     df = fusion_data.copy()
-    df['x'] = df['x'].apply(eval)
-    df['y'] = df['y'].apply(eval)
+    if "centroid_x_replace_filter" in df.columns:
+        df[
+            ["centroid_x_replace_filter",
+            "centroid_y_replace_filter",
+            "centroid_z_replace_filter"]
+        ] = df.apply(transform_coordinates_filter, axis=1, result_type='expand')
+    df["x"] = df["x"].apply(eval)
+    df["y"] = df["y"].apply(eval)
     df['z'] = df['z'].apply(eval)
     df['velocity'] = df['velocity'].apply(eval)
 
     df[['x', 'y', 'z']] = df.apply(transform_coordinates, axis=1, result_type='expand')
+    return df
+
+def process_centroids(fusion_data, output_name = CENTROID_OUTPUT_FILE):
+    df = fusion_data.copy()
+    if "centroid_x_replace_filter" in df.columns:
+        df['centroid_xyz_replace_filter'] = df.apply(lambda row: [row["centroid_x_replace_filter"],row["centroid_y_replace_filter"], row["centroid_z_replace_filter"]], axis=1)
+        df = df[df['centroid_x_replace_filter'].apply(lambda x: not np.isnan(x)) & df['centroid_y_replace_filter'].apply(lambda y: not np.isnan(y)) & df['centroid_z_replace_filter'].apply(lambda z: not np.isnan(z))]
+    # df[['x', 'y', 'z']] = df.apply(transform_coordinates, axis=1, result_type='expand')
     #drop rows where x,y,z are empty lists
     df = df[df['x'].apply(lambda x: len(x) > 0) & df['y'].apply(lambda y: len(y) > 0) & df['z'].apply(lambda z: len(z) > 0)]
     df['centroid_xyz'] = df.apply(calculate_centroid, axis=1)
-    df.to_csv(CENTROID_OUTPUT_FILE, index=False)
-    print(f"Centroid calculation added to data at {CENTROID_OUTPUT_FILE}")
+    df['centroid_x'] = df.apply(lambda row: row['centroid_xyz'][0], axis=1)
+    df['centroid_y'] = df.apply(lambda row: row['centroid_xyz'][1], axis=1)
+    df['centroid_z'] = df.apply(lambda row: row['centroid_xyz'][2], axis=1)
+    df.to_csv(output_name, index=False)
+    print(f"Centroid calculation added to data at {output_name}")
     return df
 
 
@@ -408,7 +434,8 @@ if __name__ == "__main__":
     fused_data = fuse_datasets()
 
     print("\nProcessing Centroids...")
-    centroid_data = process_centroids(fused_data)
+    coordinate_fixed_data = process_coordinates_transormation(fused_data)
+    centroid_data = process_centroids(coordinate_fixed_data)
 
     centroid_data["X_mmw_centroid"] = [x[0] for x in centroid_data["centroid_xyz"].values]
     centroid_data["Y_mmw_centroid"] = [x[1] for x in centroid_data["centroid_xyz"].values]
