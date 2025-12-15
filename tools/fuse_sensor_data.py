@@ -96,17 +96,21 @@ for key, group in grouped_dict.items():
             v = series.dropna().var()
             return default_variance if np.isnan(v) else v
 
-        mmw_x_var = safe_var(group['centroid_xyz'].apply(lambda x: x[0]), DEFAULT_COV[0, 0]) + REGULARIZATION_FACTOR
-        mmw_y_var = safe_var(group['centroid_xyz'].apply(lambda y: y[1]), DEFAULT_COV[1, 1]) + REGULARIZATION_FACTOR
-        mmw_cov = np.array([[mmw_x_var, 0], [0, mmw_y_var]])
+        mmw_x = group['centroid_xyz'].apply(lambda x: x[0])
+        mmw_y = group['centroid_xyz'].apply(lambda x: x[1])
+        mmw_x_var = safe_var(mmw_x, DEFAULT_COV[0, 0]) + REGULARIZATION_FACTOR
+        mmw_y_var = safe_var(mmw_y, DEFAULT_COV[1, 1]) + REGULARIZATION_FACTOR
+        mmw_cov = np.array([[mmw_x_var, mmw_x.cov(mmw_y)], [mmw_x.cov(mmw_y), mmw_y_var]])
         
-        ble_x_var = safe_var(group['x_ble'], DEFAULT_COV[0, 0]) + REGULARIZATION_FACTOR
-        ble_y_var = safe_var(group['y_ble'], DEFAULT_COV[1, 1]) + REGULARIZATION_FACTOR
-        ble_cov = np.array([[ble_x_var, 0], [0, ble_y_var]])
+        ble_x = group['x_ble']
+        ble_y = group['y_ble']
+        ble_x_var = safe_var(ble_x, DEFAULT_COV[0, 0]) + REGULARIZATION_FACTOR
+        ble_y_var = safe_var(ble_y, DEFAULT_COV[1, 1]) + REGULARIZATION_FACTOR
+        ble_cov = np.array([[ble_x_var, ble_x.cov(ble_y)], [ble_x.cov(ble_y), ble_y_var]])
         
         ble_x_filter_var = safe_var(group['x_ble_filter'], DEFAULT_COV[0, 0]) + REGULARIZATION_FACTOR
         ble_y_filter_var = safe_var(group['y_ble_filter'], DEFAULT_COV[1, 1]) + REGULARIZATION_FACTOR
-        ble_cov_filter = np.array([[ble_x_filter_var, 0], [0, ble_y_filter_var]])
+        ble_cov_filter = np.array([[ble_x_filter_var, group['x_ble_filter'].cov(group['y_ble_filter'])], [group['x_ble_filter'].cov(group['y_ble_filter']), ble_y_filter_var]])
 
     # Apply the robust fusion function
     group[["sensor_fused_xyz", "sensor_fused_cov"]] = group.apply(
