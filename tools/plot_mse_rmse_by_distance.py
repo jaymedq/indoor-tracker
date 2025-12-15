@@ -139,7 +139,7 @@ print("Figure for All Points saved to Resultado.png")
 
 for hallway in unique_hallways:
     hallway_data = results[results['hallway_index'] == hallway].copy()
-    hallway_point_labels = hallway_data['experiment_point'].tolist()
+    hallway_point_labels = [f"{point.experiment_point}\nN={point.samples}" for point in hallway_data.itertuples(index=False)]
 
     if hallway_data.empty:
         print(f"No data for Hallway C{hallway}. Skipping.")
@@ -151,7 +151,8 @@ for hallway in unique_hallways:
     x = np.arange(len(hallway_data))  
     for method in methods:
         offset = width * multiplier
-        ax.bar(x + offset, hallway_data[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+        rects = ax.bar(x + offset, hallway_data[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
+        ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
         multiplier += 1
 
     print(f'\n--- Hallway C{hallway} RMSE Summary ---')
