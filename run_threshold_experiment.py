@@ -66,6 +66,14 @@ def main():
 
     # These are the files processed by the original .bat file
     test_files = [
+        "Results/T125_MMW_A5_BLE_C2P2/T125_MMW_A5_BLE_C2P2_ble_data.csv",
+        "Results/T126_MMW_A5_BLE_C2P3/T126_MMW_A5_BLE_C2P3_ble_data.csv",
+        "Results/T127_MMW_A5_BLE_C2P4/T127_MMW_A5_BLE_C2P4_ble_data.csv",
+        "Results/T128_MMW_A5_BLE_C2P5/T128_MMW_A5_BLE_C2P5_ble_data.csv",
+        "Results/T129_MMW_A5_BLE_C4P4/T129_MMW_A5_BLE_C4P4_ble_data.csv",
+        "Results/T130_MMW_A5_BLE_C3P5/T130_MMW_A5_BLE_C3P5_ble_data.csv",
+        "Results/T131_MMW_A5_BLE_C3P4/T131_MMW_A5_BLE_C3P4_ble_data.csv",
+        "Results/T132_MMW_A5_BLE_C3P3/T132_MMW_A5_BLE_C3P3_ble_data.csv",
         "Results/T136_MMW_A5_BLE_C2P2/T136_MMW_A5_BLE_C2P2_ble_data.csv",
         "Results/T137_MMW_A5_BLE_C2P3/T137_MMW_A5_BLE_C2P3_ble_data.csv",
         "Results/T138_MMW_A5_BLE_C2P4/T138_MMW_A5_BLE_C2P4_ble_data.csv",

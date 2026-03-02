@@ -57,14 +57,6 @@ scikit-learn==1.6.0
 scipy==1.13.1
 six==1.17.0
 sympy==1.13.3
-tensorboard==2.10.1
-tensorboard-data-server==0.6.1
-tensorboard-plugin-wit==1.8.1
-tensorflow-cpu==2.10.0
-tensorflow-directml-plugin==0.4.0.dev230202
-tensorflow-estimator==2.10.0
-tensorflow-io-gcs-filesystem==0.31.0
-tensorflow_intel==2.10.0
 termcolor==2.5.0
 threadpoolctl==3.5.0
 typing_extensions==4.12.2
