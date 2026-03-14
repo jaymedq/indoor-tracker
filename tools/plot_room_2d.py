@@ -21,6 +21,7 @@ OBSTACLES = [
 ]
 
 POINTS_TO_CONSIDER = ["C3P2", "C3P3", "C3P4", "C3P5", "C2P2", "C2P3", "C2P4", "C2P5"]
+ANCHORS_TO_CONSIDER = ["ANCHOR1", "ANCHOR2", "ANCHOR3", "ANCHOR4"]
 
 def plot_obstacles(ax):
     """Desenha os obstáculos fixos (mesas e bancadas)."""
@@ -91,7 +92,10 @@ def plot_radar_fov(ax, plot_radar_point_value:bool = False):
         label="Radar Position",
     )
     if plot_radar_point_value:
-        ax.text(RADAR_PLACEMENT[0]+0.1, RADAR_PLACEMENT[1]-0.4, f"{RADAR_PLACEMENT[:2]}", fontsize=10)
+        ha_val = "right"
+        va_val = "bottom"
+        ax.text(RADAR_PLACEMENT[0]+0.1, RADAR_PLACEMENT[1]-0.6, "R", weight="bold", fontsize=10, ha=ha_val, va=va_val)
+        ax.text(RADAR_PLACEMENT[0]+1.8, RADAR_PLACEMENT[1]-0.6, f"{RADAR_PLACEMENT[:2]}", fontsize=10, ha=ha_val, va=va_val)
 
 
 def plot_experiment_points(ax, plot_anchor_position=False):
@@ -99,36 +103,51 @@ def plot_experiment_points(ax, plot_anchor_position=False):
     anchor_y = []
     anchopr_labels = []
     for label, coords in EXPERIMENT_POINTS.items():
-        if "V" in label:
+        if not (label in POINTS_TO_CONSIDER or label in ANCHORS_TO_CONSIDER) or "V" in label:
             continue
-        if (label.startswith("C") or label.startswith("HALL")) and label not in POINTS_TO_CONSIDER:
-            continue
-        if "ANCHOR" in label:
+        elif "ANCHOR" in label and label in ANCHORS_TO_CONSIDER:
+            offset_x = 0.3
+            offset_y = -0.5
             anchor_x.append(coords[0])
             anchor_y.append(coords[1])
             anchopr_labels.append(label)
             ax.text(
-                coords[0],
-                coords[1],
+                coords[0] + offset_x,
+                coords[1] + offset_y - 0.1,
                 label.replace("ANCHOR", "A"),
-                fontsize=8,
+                fontsize=10,
                 weight="bold",
                 ha="right",
                 va="bottom",
-                color="r",
+                color="r"
             )
             if plot_anchor_position:
-                ax.text(coords[0]+0.1, coords[1], f"{coords[:2]}", fontsize=10, color="r")
+                ax.text(coords[0]+offset_x, coords[1]+offset_y, f"{coords[:2]}", fontsize=10, color="r")
         else:
+            # Adjust label position to avoid overlap
+            offset_x = 0
+            offset_y = 0.1
+            ha_val = "center"
+            va_val = "bottom"
+            
+            if "C2" in label or "C3" in label:
+                va_val = "top"
+                offset_y = 0.40
+            else:
+                ha_val = "right"
+                va_val = "bottom"
+                offset_x = -0.1
+                offset_y = 0.1
+
             ax.text(
-                coords[0],
-                coords[1],
-                label.replace("C","H"),
+                coords[0] + offset_x,
+                coords[1] + offset_y,
+                label.replace("C","H") if label.startswith("C") else label,
                 fontsize=8,
                 weight="bold",
-                ha="right",
-                va="bottom",
-                color="dimgray",
+                ha=ha_val,
+                va=va_val,
+                color="dimgray"
             )
             ax.scatter(coords[0], coords[1], c="gray", marker=".", s=20)
     ax.scatter(anchor_x, anchor_y, c="r", marker="v", s=20, label="BLE Anchor Position")
@@ -189,4 +208,3 @@ if __name__ == "__main__":
     fig.savefig("labsc_2d_map.png")
     fig.savefig("labsc_2d_map.eps", format='eps')
     fig.tight_layout()
-    plt.show()
