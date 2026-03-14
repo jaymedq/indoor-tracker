@@ -187,5 +187,6 @@ if __name__ == "__main__":
     ax.set_xlabel("X [m]", fontsize=14)
     ax.set_ylabel("Y [m]", fontsize=14)
     fig.savefig("labsc_2d_map.png")
+    fig.savefig("labsc_2d_map.eps", format='eps')
     fig.tight_layout()
     plt.show()
