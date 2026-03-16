@@ -4,27 +4,38 @@ Produces individual thesis-ready EPS figures from threshold_window_experiment_re
 
 Output files
 ------------
-SWMF_heatmaps.eps / .png   – two heatmaps (RMSE_Fusion + replace rate) stacked
-SWMF_lineplots.eps / .png  – RMSE vs threshold (per window) + RMSE vs window size
-SWMF_analysis.eps / .png   – combined 4-panel overview (preview)
+SWMF_heatmaps.eps / .png   - two heatmaps (RMSE_Fusion + discard rate) stacked
+SWMF_lineplots.eps / .png  - RMSE vs threshold (per window) + RMSE vs window size
+SWMF_analysis.eps / .png   - combined 4-panel overview (preview)
 """
 
 import numpy as np
 import pandas as pd
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib.colors import LinearSegmentedColormap
 
-matplotlib.rcParams.update({
-    "font.family":  "serif",
-    "font.size":    9,
-    "axes.labelsize": 9,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
-    "legend.fontsize": 7,
-    "figure.dpi":   150,
+# --- PGF CONFIGURATION ---
+mpl.use("pgf")
+mpl.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",     # Matches LaTeX default
+    "text.usetex": True,        # Let LaTeX handle the rendering
+    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
 })
+
+def get_size(width_pt, fraction=1, subplots=(1, 1), aspect_ratio=None):
+    """Set figure dimensions to avoid scaling in LaTeX."""
+    fig_width_pt = width_pt * fraction
+    inches_per_pt = 1 / 72.27
+    fig_width_in = fig_width_pt * inches_per_pt
+    if aspect_ratio is None:
+        golden_ratio = (5**.5 - 1) / 2
+        fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
+    else:
+        fig_height_in = fig_width_in * aspect_ratio
+    return (fig_width_in, fig_height_in)
 
 CSV_PATH = "threshold_window_experiment_results.csv"
 
@@ -65,48 +76,43 @@ def _annotate_heatmap(ax, pivot, windows, thresholds, fmt, threshold_white):
 
 
 def fig_heatmaps(df, windows, thresholds, rmse_pivot, rr_pivot):
-    """Figure 1 – stacked heatmaps."""
+    """Figure 1 - separate heatmaps."""
     th_labels = [f"{t:.2f}" for t in thresholds]
     w_labels  = [str(w) for w in windows]
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7.2, 5.5),
-                                   gridspec_kw={"hspace": 0.55})
-
     # ── RMSE heatmap ────────────────────────────────────────────────────────
+    fig_rmse, ax1 = plt.subplots(figsize=get_size(345, aspect_ratio=0.8))
     im1 = ax1.imshow(rmse_pivot.values, aspect="auto",
                      cmap=BLUE_CMAP, vmin=0.19, vmax=0.25)
     ax1.set_xticks(range(len(thresholds))); ax1.set_xticklabels(th_labels)
     ax1.set_yticks(range(len(windows)));   ax1.set_yticklabels(w_labels)
     ax1.set_xlabel("Threshold (m)"); ax1.set_ylabel("Window size $W$")
-    ax1.set_title(r"(a) Mean $\mathrm{RMSE}_\mathrm{Fusion}$ (m)", fontweight="bold")
-    cb1 = fig.colorbar(im1, ax=ax1, shrink=0.9, pad=0.01)
+    cb1 = fig_rmse.colorbar(im1, ax=ax1, shrink=0.9, pad=0.01)
     cb1.set_label("RMSE (m)")
     _annotate_heatmap(ax1, rmse_pivot, windows, thresholds, "{:.3f}", 0.225)
     _mark_cell(ax1, windows, thresholds, CHOSEN_W, CHOSEN_T)
 
-    # ── Replace-rate heatmap ─────────────────────────────────────────────────
+    # ── Discard-rate heatmap ─────────────────────────────────────────────────
+    fig_rr, ax2 = plt.subplots(figsize=get_size(345, aspect_ratio=0.8))
     im2 = ax2.imshow(rr_pivot.values, aspect="auto",
                      cmap=GREEN_CMAP, vmin=0, vmax=90)
     ax2.set_xticks(range(len(thresholds))); ax2.set_xticklabels(th_labels)
     ax2.set_yticks(range(len(windows)));   ax2.set_yticklabels(w_labels)
     ax2.set_xlabel("Threshold (m)"); ax2.set_ylabel("Window size $W$")
-    ax2.set_title("(b) Mean Filter Replace Rate (%)", fontweight="bold")
-    cb2 = fig.colorbar(im2, ax=ax2, shrink=0.9, pad=0.01)
-    cb2.set_label("Replace rate (%)")
+    cb2 = fig_rr.colorbar(im2, ax=ax2, shrink=0.9, pad=0.01)
+    cb2.set_label("Discard rate (%)")
     _annotate_heatmap(ax2, rr_pivot, windows, thresholds, "{:.0f}", 50)
     _mark_cell(ax2, windows, thresholds, CHOSEN_W, CHOSEN_T)
 
-    return fig
+    return fig_rmse, fig_rr
 
 
 def fig_lineplots(df, windows, thresholds, ref_ble, ref_mmw):
-    """Figure 2 – line plots."""
+    """Figure 2 and 3 - separate line plots."""
     cmap_lines = plt.get_cmap("tab10")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.2, 3.2),
-                                   gridspec_kw={"wspace": 0.42})
-
     # ── Panel C: RMSE vs threshold ───────────────────────────────────────────
+    fig_c, ax1 = plt.subplots(figsize=get_size(345, aspect_ratio=0.7))
     for idx, w in enumerate(windows):
         sub  = df[df["window"] == w].groupby("threshold")["RMSE_Fusion"].mean()
         lw   = 2.2 if w == CHOSEN_W else 1.0
@@ -123,19 +129,19 @@ def fig_lineplots(df, windows, thresholds, ref_ble, ref_mmw):
     ax1.axvline(CHOSEN_T * 100, color="red", linestyle="--", linewidth=1, alpha=0.7)
     ax1.set_xlabel("Threshold (cm)")
     ax1.set_ylabel(r"Mean $\mathrm{RMSE}_\mathrm{Fusion}$ (m)")
-    ax1.set_title(r"(a) RMSE$_\mathrm{Fusion}$ vs.\ Threshold", fontweight="bold")
-    ax1.legend(ncol=2, loc="upper right")
+    ax1.legend(ncol=3, loc="lower center", bbox_to_anchor=(0.5, 1.05), fontsize=8)
     ax1.grid(True, alpha=0.3)
     ax1.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.3f"))
 
     # ── Panel D: RMSE + replace-rate vs window ───────────────────────────────
+    fig_d, ax2 = plt.subplots(figsize=get_size(345, aspect_ratio=0.7))
     sub_w  = df[df["threshold"] == CHOSEN_T].groupby("window")["RMSE_Fusion"].mean()
     sub_rr = df[df["threshold"] == CHOSEN_T].groupby("window")["filter_replace_rate"].mean()
 
     ax2b = ax2.twinx()
     ax2b.bar(sub_rr.index, sub_rr.values, width=1.4,
-             color="salmon", alpha=0.45, label="Replace rate", zorder=1)
-    ax2b.set_ylabel("Mean replace rate (%)", color="salmon")
+             color="salmon", alpha=0.45, label="Discard rate", zorder=1)
+    ax2b.set_ylabel("Mean discard rate (%)", color="salmon")
     ax2b.tick_params(axis="y", colors="salmon")
     ax2b.set_ylim(0, 100)
 
@@ -147,40 +153,39 @@ def fig_lineplots(df, windows, thresholds, ref_ble, ref_mmw):
     ax2.set_xlabel("Window size $W$")
     ax2.set_ylabel(r"Mean $\mathrm{RMSE}_\mathrm{Fusion}$ (m)", color="blue")
     ax2.tick_params(axis="y", colors="blue")
-    ax2.set_title(
-        r"(b) RMSE$_\mathrm{Fusion}$ vs.\ Window Size"
-        f"\n(threshold = {CHOSEN_T} m)",
-        fontweight="bold"
-    )
     ax2.set_xticks(windows)
+    
     lines1, labs1 = ax2.get_legend_handles_labels()
     lines2, labs2 = ax2b.get_legend_handles_labels()
-    ax2.legend(lines1 + lines2, labs1 + labs2, loc="upper right")
+    ax2.legend(lines1 + lines2, labs1 + labs2, loc="lower center", bbox_to_anchor=(0.5, 1.05), ncol=2, fontsize=8)
     ax2.grid(True, alpha=0.3)
     ax2.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.3f"))
 
-    return fig
+    return fig_c, fig_d
 
 
 def _save(fig, stem):
-    fig.savefig(f"{stem}.eps", format="eps", bbox_inches="tight")
-    fig.savefig(f"{stem}.png", bbox_inches="tight")
-    print(f"Saved: {stem}.eps  /  {stem}.png")
+    fig.savefig(f"{stem}.pgf", backend='pgf', bbox_inches="tight")
+    fig.savefig(f"{stem}.pdf", bbox_inches="tight")
+    print(f"Saved: {stem}.pgf  /  {stem}.pdf")
     plt.close(fig)
 
 
 def main():
     df, windows, thresholds, rmse_pivot, rr_pivot, ref_ble, ref_mmw = _load(CSV_PATH)
 
-    _save(fig_heatmaps(df, windows, thresholds, rmse_pivot, rr_pivot),
-          "SWMF_heatmaps")
+    fig_rmse, fig_rr = fig_heatmaps(df, windows, thresholds, rmse_pivot, rr_pivot)
+    _save(fig_rmse, "SWMF_heatmap_rmse")
+    _save(fig_rr, "SWMF_heatmap_discard")
 
-    _save(fig_lineplots(df, windows, thresholds, ref_ble, ref_mmw),
-          "SWMF_lineplots")
+    
+    fig_thresh, fig_window = fig_lineplots(df, windows, thresholds, ref_ble, ref_mmw)
+    _save(fig_thresh, "SWMF_lineplot_threshold")
+    _save(fig_window, "SWMF_lineplot_window")
 
     # ── combined overview (preview only) ────────────────────────────────────
-    fig_all = plt.figure(figsize=(13, 11))
-    gs = fig_all.add_gridspec(3, 2, hspace=0.52, wspace=0.38,
+    fig_all = plt.figure(figsize=get_size(345, aspect_ratio=1.2))
+    gs = fig_all.add_gridspec(3, 2, hspace=0.8, wspace=0.38,
                               height_ratios=[1, 1, 1.1])
     th_labels = [f"{t:.2f}" for t in thresholds]
     w_labels  = [str(w) for w in windows]
@@ -193,7 +198,7 @@ def main():
         (ax_a, rmse_pivot, BLUE_CMAP,  0.25, "{:.3f}", 0.225,
          r"(a) Mean $\mathrm{RMSE}_\mathrm{Fusion}$ (m)", "RMSE (m)"),
         (ax_b, rr_pivot,   GREEN_CMAP, 90,   "{:.0f}", 50,
-         "(b) Mean Filter Replace Rate (%)", "Replace rate (%)"),
+         "(b) Mean Filter Discard Rate (%)", "Discard rate (%)"),
     ]:
         im = ax.imshow(pivot.values, aspect="auto", cmap=cmap, vmin=0 if cmap==GREEN_CMAP else 0.19, vmax=vmax)
         ax.set_xticks(range(len(thresholds))); ax.set_xticklabels(th_labels, fontsize=8)
@@ -217,13 +222,13 @@ def main():
     ax_c.axvline(CHOSEN_T * 100, color="red", linestyle="--", linewidth=1, alpha=0.7)
     ax_c.set_xlabel("Threshold (cm)", fontsize=9); ax_c.set_ylabel(r"Mean RMSE$_F$ (m)", fontsize=9)
     ax_c.set_title(r"(c) RMSE$_F$ vs. Threshold", fontsize=10, fontweight="bold")
-    ax_c.legend(fontsize=6, ncol=2); ax_c.grid(True, alpha=0.3)
+    ax_c.legend(loc="lower center", bbox_to_anchor=(0.5, 1.05), fontsize=8, ncol=2); ax_c.grid(True, alpha=0.3)
 
     sub_w  = df[df["threshold"] == CHOSEN_T].groupby("window")["RMSE_Fusion"].mean()
     sub_rr = df[df["threshold"] == CHOSEN_T].groupby("window")["filter_replace_rate"].mean()
     ax_db = ax_d.twinx()
     ax_db.bar(sub_rr.index, sub_rr.values, width=1.4, color="salmon", alpha=0.4)
-    ax_db.set_ylabel("Replace rate (%)", color="salmon", fontsize=8)
+    ax_db.set_ylabel("Discard rate (%)", color="salmon", fontsize=8)
     ax_db.tick_params(axis="y", colors="salmon", labelsize=7)
     ax_d.plot(sub_w.index, sub_w.values, "b-o", linewidth=2, markersize=4, zorder=3)
     ax_d.axhline(ref_ble, color="dimgray", linestyle="--", linewidth=1)
@@ -232,10 +237,14 @@ def main():
     ax_d.set_xlabel("Window size $W$", fontsize=9)
     ax_d.set_ylabel(r"Mean RMSE$_F$ (m)", color="blue", fontsize=9)
     ax_d.tick_params(axis="y", colors="blue", labelsize=7)
-    ax_d.set_title(f"(d) RMSE$_F$ vs. Window (τ={CHOSEN_T} m)", fontsize=10, fontweight="bold")
+    ax_d.set_title(f"(b) RMSE$_F$ vs. Window ($\\tau$={CHOSEN_T} m)", fontsize=10, fontweight="bold")
     ax_d.set_xticks(windows); ax_d.grid(True, alpha=0.3)
+    
+    lines1, labs1 = ax_d.get_legend_handles_labels()
+    lines2, labs2 = ax_db.get_legend_handles_labels()
+    ax_d.legend(lines1 + lines2, labs1 + labs2, loc="lower center", bbox_to_anchor=(0.5, 1.05), ncol=2, fontsize=8)
 
-    fig_all.suptitle("SWMF Parameter Study – BLE AoA + mmWave Fusion",
+    fig_all.suptitle("SWMF Parameter Study - BLE AoA + mmWave Fusion",
                      fontsize=12, fontweight="bold")
     _save(fig_all, "SWMF_analysis")
 

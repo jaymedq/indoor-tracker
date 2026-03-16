@@ -8,6 +8,28 @@ from typing import Iterable, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
+
+# --- PGF CONFIGURATION ---
+mpl.use("pgf")
+mpl.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",     # Matches LaTeX default
+    "text.usetex": True,        # Let LaTeX handle the rendering
+    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+})
+
+def get_size(width_pt, fraction=1, subplots=(1, 1), aspect_ratio=None):
+    """Set figure dimensions to avoid scaling in LaTeX."""
+    fig_width_pt = width_pt * fraction
+    inches_per_pt = 1 / 72.27
+    fig_width_in = fig_width_pt * inches_per_pt
+    if aspect_ratio is None:
+        golden_ratio = (5**.5 - 1) / 2
+        fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
+    else:
+        fig_height_in = fig_width_in * aspect_ratio
+    return (fig_width_in, fig_height_in)
 
 
 try:
@@ -280,7 +302,7 @@ def main() -> int:
     else:
         xs, ys, zs = _transform_to_room_coords(x, y, z)
 
-    fig = plt.figure(figsize=(7.2, 5.2))
+    fig = plt.figure(figsize=get_size(345, aspect_ratio=0.7))
     ax = fig.add_subplot(111, projection="3d")
 
     # Make 3D panes fully opaque for EPS output.
@@ -313,11 +335,17 @@ def main() -> int:
 
     ax.view_init(elev=22, azim=-55)
 
-    ax.legend(loc="upper right", framealpha=1.0)
+    # Place a single legend for both subplots at the top
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.9), ncol=2, fontsize=8)
 
-    fig.tight_layout()
-    fig.savefig(args.output, format="eps")
-    print(f"Saved EPS: {args.output}")
+    # fig.tight_layout()
+    
+    # Save PGF and PDF formats
+    out_stem = args.output.with_suffix("")
+    fig.savefig(f"{out_stem}.pgf", backend="pgf")
+    fig.savefig(f"{out_stem}.pdf")
+    print(f"Saved: {out_stem}.pgf and {out_stem}.pdf")
 
     if args.show:
         plt.show()

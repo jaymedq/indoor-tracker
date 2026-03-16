@@ -129,6 +129,7 @@ plt.title("Entropy per Distance Group")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
+plt.savefig('entropies.png')
 plt.show()
 
 # === New Figure: KL Divergences per Distance ===
@@ -142,4 +143,5 @@ plt.title("KL Divergences per Distance Group")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
+plt.savefig('kl_divergence.png')
 plt.show()

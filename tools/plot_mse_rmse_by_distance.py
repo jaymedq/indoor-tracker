@@ -1,6 +1,29 @@
 import pandas as pd
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+# --- PGF CONFIGURATION ---
+mpl.use("pgf")
+mpl.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",     # Matches LaTeX default
+    "text.usetex": True,        # Let LaTeX handle the rendering
+    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+})
+
+def get_size(width_pt, fraction=1, subplots=(1, 1), aspect_ratio=None):
+    """Set figure dimensions to avoid scaling in LaTeX."""
+    fig_width_pt = width_pt * fraction
+    inches_per_pt = 1 / 72.27
+    fig_width_in = fig_width_pt * inches_per_pt
+    if aspect_ratio is None:
+        golden_ratio = (5**.5 - 1) / 2
+        fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
+    else:
+        fig_height_in = fig_width_in * aspect_ratio
+    return (fig_width_in, fig_height_in)
+
 from calculate_mse_mae_rmse import calculate_rmse, calculate_mse
 from constants import EXPERIMENT_POINTS, RADAR_PLACEMENT
 from plot_room_2d import POINTS_TO_CONSIDER
@@ -80,7 +103,7 @@ method_label_map = {
     "BLE": "BLE only",
     "MMW": "mmWave only",
     "FusionWOSWMF": "T2TF without SWMF",
-    "Fusion": "Proposed T2TF scheme",
+    "Fusion": "Proposed T2TF",
     "DeepFusion": "Deep Learning Fusion"
 }
 method_marker_map = {
@@ -105,7 +128,7 @@ results['hallway_index'] = results['experiment_point'].apply(get_hallway_index)
 
 unique_hallways = sorted(results['hallway_index'].dropna().unique())
 
-fig, ax = plt.subplots(figsize=(12, 6))
+fig, ax = plt.subplots(figsize=get_size(345, aspect_ratio=0.5))
 multiplier = 0
 width = 0.15
 x = np.arange(len(results))  # the label locations
@@ -113,7 +136,7 @@ x = np.arange(len(results))  # the label locations
 for method in methods:
     offset = width * multiplier
     rects = ax.bar(x + offset, results[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
-    ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
+    ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=4.5, rotation=90)
     multiplier += 1
 
 print(f'Absolute improvement in RMSE from BLE:', results['RMSE_BLE'].mean() - results['RMSE_Fusion'].mean())
@@ -121,21 +144,20 @@ print(f'Absolute improvement in RMSE from MMW:', results['RMSE_MMW'].mean() - re
 print(f"Percentage improvement in RMSE from BLE: {(((results['RMSE_Fusion'].mean() - results['RMSE_BLE'].mean()) / results['RMSE_BLE'].mean()))*100:.2f}%")
 print(f"Percentage improvement in RMSE from MMW: {(((results['RMSE_Fusion'].mean() - results['RMSE_MMW'].mean()) / results['RMSE_BLE'].mean()))*100:.2f}%")
 
-ax.set_title('Root Mean Squared Error (RMSE) by Experiment Point', fontsize=16)
-ax.set_xlabel('Experiment Point', fontsize=14)
-ax.set_ylabel('RMSE [m]', fontsize=14)
-ax.set_ylim((0, 1.4))
-# Set x-ticks to be centered under the groups of bars and labeled with point_labels
-ax.set_xticks(x + width * (len(methods) - 1) / 2)
-ax.set_xticklabels(point_labels, rotation=45, ha='right')
-ax.legend(loc='upper left')
+ax.set_xlabel(r'Experiment Point', fontsize=8)
+ax.set_ylabel('RMSE [m]', fontsize=8)
+ax.set_xticks(x + width) # This line was changed
+ax.set_xticklabels(point_labels, rotation=45, ha='right', fontsize=8) # This line was kept from original
+ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.05), ncol=4, fontsize=6)
+ax.set_ylim(0, 1.0)
 ax.grid(True, axis='y', linestyle='--', alpha=0.6)
 fig.tight_layout()
 
 # Save the figure with a dedicated filename for ALL points
-fig.savefig("Resultado.eps", format='eps')
-fig.savefig("Resultado.png")
-print("Figure for All Points saved to Resultado.png")
+fig.savefig("Resultado.eps", format = 'eps')
+fig.savefig("Resultado.pgf", backend='pgf', bbox_inches='tight')
+fig.savefig("Resultado.pdf", bbox_inches='tight')
+print("Figure for All Points saved to Resultado.pgf and .pdf")
 
 for hallway in unique_hallways:
     hallway_data = results[results['hallway_index'] == hallway].copy()
@@ -145,36 +167,34 @@ for hallway in unique_hallways:
         print(f"No data for Hallway C{hallway}. Skipping.")
         continue
 
-    fig, ax = plt.subplots(figsize=(10, 6)) # New figure for each hallway
+    fig, ax = plt.subplots(figsize=get_size(345, aspect_ratio=0.5)) # New figure for each hallway
     multiplier = 0
     width = 0.15
     x = np.arange(len(hallway_data))  
     for method in methods:
         offset = width * multiplier
         rects = ax.bar(x + offset, hallway_data[f'RMSE_{method}'], width, label=method_label_map.get(method, method))
-        ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=8)
+        ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=6)
         multiplier += 1
 
     print(f'\n--- Hallway C{hallway} RMSE Summary ---')
     for method in methods:
         print(f'Mean RMSE_{method} for C{hallway}:', hallway_data[f'RMSE_{method}'].mean())
 
-    ax.set_title(f'Root Mean Squared Error (RMSE) by Experiment Point - Hallway C{hallway}', fontsize=16)
-    ax.set_xlabel('Experiment Point', fontsize=14)
-    ax.set_ylabel('RMSE [m]', fontsize=14)
-    ax.set_ylim((0, 1.4)) # Keep consistent Y limit
-    
-    ax.set_xticks(x + width * (len(methods) - 1) / 2)
-    ax.set_xticklabels(hallway_point_labels, rotation=45, ha='right')
-    ax.legend(loc='upper left')
+    ax.set_xlabel(r'Experiment Point')
+    ax.set_ylabel(r'RMSE [m]')
+    ax.set_xticks(x + width) # Changed xticks
+    ax.set_xticklabels(hallway_point_labels, rotation=45, ha='right', fontsize=8) # Kept from original
+    ax.set_ylim(0, 1.0) # Changed ylim
     ax.grid(True, axis='y', linestyle='--', alpha=0.6)
     
-    fig.tight_layout()
-    
-    filename_eps = f"Resultado_Hallway_C{hallway}.eps"
-    filename_png = f"Resultado_Hallway_C{hallway}.png"
-    fig.savefig(filename_eps, format='eps')
-    fig.savefig(filename_png)
-    print(f"Figure for Hallway C{hallway} saved to {filename_png}")
+    # fig.tight_layout()
+    filename_pgf = f"Resultado_Hallway_C{hallway}.pgf"
+    filename_pdf = f"Resultado_Hallway_C{hallway}.pdf"
 
-plt.show()
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.9), ncol=2, fontsize=8)
+
+    fig.savefig(filename_pgf, backend='pgf', bbox_inches='tight')
+    fig.savefig(filename_pdf, bbox_inches='tight')
+    print(f"Figure for Hallway C{hallway} saved to {filename_pgf}")
