@@ -2,13 +2,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 # --- PGF CONFIGURATION ---
-mpl.use("pgf")
-mpl.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    "font.family": "serif",     # Matches LaTeX default
-    "text.usetex": True,        # Let LaTeX handle the rendering
-    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
-})
 
 def get_size(width_pt, fraction=1, subplots=(1, 1), aspect_ratio=None):
     """Set figure dimensions to avoid scaling in LaTeX."""
@@ -117,7 +110,7 @@ def plot_radar_fov(ax, plot_radar_point_value:bool = False):
     if plot_radar_point_value:
         ha_val = "right"
         va_val = "bottom"
-        ax.text(RADAR_PLACEMENT[0]+0.1, RADAR_PLACEMENT[1]-0.6, "R", weight="bold", fontsize=10, ha=ha_val, va=va_val)
+        # ax.text(RADAR_PLACEMENT[0]+0.1, RADAR_PLACEMENT[1]-0.6, "R", weight="bold", fontsize=10, ha=ha_val, va=va_val)
         ax.text(RADAR_PLACEMENT[0]+1.85, RADAR_PLACEMENT[1]-0.6, f"{RADAR_PLACEMENT[:2]}", fontsize=10, ha=ha_val, va=va_val)
 
 
@@ -231,6 +224,14 @@ if __name__ == "__main__":
     ax.set_ylabel(r"Y [m]")
     fig.tight_layout()
     
+    fig.savefig("labsc_2d_map.png")
+    mpl.use("pgf")
+    mpl.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        "font.family": "serif",     # Matches LaTeX default
+        "text.usetex": True,        # Let LaTeX handle the rendering
+        "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+    })
     fig.savefig("labsc_2d_map.pgf", backend='pgf', bbox_inches='tight')
     fig.savefig("labsc_2d_map.pdf", bbox_inches='tight')
-    print("Saved labsc_2d_map.pgf and .pdf")
+    print("Saved labsc_2d_map.png, .pgf and .pdf")

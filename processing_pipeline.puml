@@ -1,0 +1,28 @@
+@startuml
+skinparam style strictuml
+skinparam defaultTextAlignment center
+skinparam backgroundColor transparent
+
+start
+
+split
+    :Carregar logs brutos de trilateração **BLE**;
+    :Aplicar **SWMF** (Filtro de Mediana\nem Janela Deslizante) para rejeição de outliers;
+    :Aplicar correção de Fuso Horário\n(-3h UTC) sobre o relógio nativo;
+split again
+    :Carregar logs da Nuvem de Pontos **mmWave**;
+    :Descartar reflexões de objetos físicos\nestáticos (filtragem limiar: velocidade = 0);
+    :Transformar as coordenadas relativas\npara o Referencial Global (Antena);
+    :Agrupar e calcular o **Centróide Múltiplo**\ndos retornos para encontrar o objeto móvel;
+end split
+
+:Sincronizar caminhos sensoriais no eixo temporal\nvia interseção estrita de timestamps (Inner Join);
+
+:Extrair e mapear coordenadas de Referência\nFísica (**Ground-Truth**) baseando-se no arquivo do teste;
+
+:Avaliar baseline métrica dos sensores puros\n e independentes (MSE, MAE, RMSE);
+
+:Consolidar fluxos alinhados e exportar o\nDataset Pré-Processado final em lote único;
+
+stop
+@enduml

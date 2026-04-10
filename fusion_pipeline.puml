@@ -1,0 +1,29 @@
+@startuml
+skinparam style strictuml
+skinparam defaultTextAlignment center
+skinparam backgroundColor transparent
+
+start
+
+:Carregar dataset sincronizado contendo
+as trajetórias 2D dos sensores BLE e mmWave;
+
+:Particionar as amostras das trajetórias
+em grupos por distância até o radar **G(d)**;
+
+:Computar as matrizes de covariância dos sensores para cada grupo **G(d)**;
+
+repeat :Para cada amostra do grupo;
+  
+  if (Ambos os sensores são válidos [Sem NaN]?) then (sim)
+    :Aplicar a Fusão de Trajetórias (**T2TF**)
+    usando Ponderação por Covariância Inversa;    
+  else (não)
+    :Rejeitar a medida;
+  endif
+repeat while (Existem mais amostras?)
+
+:Exportar dataset com a trajetória fundida;
+
+stop
+@enduml

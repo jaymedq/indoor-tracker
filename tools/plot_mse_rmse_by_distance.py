@@ -3,14 +3,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-# --- PGF CONFIGURATION ---
-mpl.use("pgf")
-mpl.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    "font.family": "serif",     # Matches LaTeX default
-    "text.usetex": True,        # Let LaTeX handle the rendering
-    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
-})
 
 def get_size(width_pt, fraction=1, subplots=(1, 1), aspect_ratio=None):
     """Set figure dimensions to avoid scaling in LaTeX."""
@@ -94,7 +86,7 @@ def calculate_errors_by_point(group):
 results = data.groupby('experiment_point').apply(calculate_errors_by_point).reset_index()
 results = results.sort_values(by='experiment_point').reset_index(drop=True)
 results.to_csv("error_by_experiment_point.csv", index=False)
-point_labels = [f"{point.experiment_point}\nN={point.samples}" for point in results.itertuples(index=False)]
+point_labels = [f"{point.experiment_point.replace('C','H')}\nN={point.samples}" for point in results.itertuples(index=False)]
 
 # Define methods and map for plotting
 # methods = ['BLE', 'MMW', 'FusionWOSWMF', 'Fusion', 'DeepFusion']
@@ -154,7 +146,15 @@ ax.grid(True, axis='y', linestyle='--', alpha=0.6)
 fig.tight_layout()
 
 # Save the figure with a dedicated filename for ALL points
-fig.savefig("Resultado.eps", format = 'eps')
+fig.savefig("Resultado.png", dpi = 400, transparent = True)
+# --- PGF CONFIGURATION ---
+mpl.use("pgf")
+mpl.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    "font.family": "serif",     # Matches LaTeX default
+    "text.usetex": True,        # Let LaTeX handle the rendering
+    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+})
 fig.savefig("Resultado.pgf", backend='pgf', bbox_inches='tight')
 fig.savefig("Resultado.pdf", bbox_inches='tight')
 print("Figure for All Points saved to Resultado.pgf and .pdf")
@@ -189,6 +189,7 @@ for hallway in unique_hallways:
     ax.grid(True, axis='y', linestyle='--', alpha=0.6)
     
     # fig.tight_layout()
+    filename_pgf = f"Resultado_Hallway_C{hallway}.pgf"
     filename_pgf = f"Resultado_Hallway_C{hallway}.pgf"
     filename_pdf = f"Resultado_Hallway_C{hallway}.pdf"
 

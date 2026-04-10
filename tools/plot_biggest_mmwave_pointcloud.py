@@ -10,14 +10,6 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
-# --- PGF CONFIGURATION ---
-mpl.use("pgf")
-mpl.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    "font.family": "serif",     # Matches LaTeX default
-    "text.usetex": True,        # Let LaTeX handle the rendering
-    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
-})
 
 def get_size(width_pt, fraction=1, subplots=(1, 1), aspect_ratio=None):
     """Set figure dimensions to avoid scaling in LaTeX."""
@@ -337,12 +329,21 @@ def main() -> int:
 
     # Place a single legend for both subplots at the top
     handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.9), ncol=2, fontsize=8)
+    fig.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, 0.7), ncol=2, fontsize=8)
 
     # fig.tight_layout()
     
     # Save PGF and PDF formats
     out_stem = args.output.with_suffix("")
+    fig.savefig(f"{out_stem}.png", transparent=True)
+    # --- PGF CONFIGURATION ---
+    mpl.use("pgf")
+    mpl.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        "font.family": "serif",     # Matches LaTeX default
+        "text.usetex": True,        # Let LaTeX handle the rendering
+        "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+    })
     fig.savefig(f"{out_stem}.pgf", backend="pgf")
     fig.savefig(f"{out_stem}.pdf")
     print(f"Saved: {out_stem}.pgf and {out_stem}.pdf")

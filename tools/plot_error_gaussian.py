@@ -4,15 +4,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 
-# --- PGF CONFIGURATION ---
-mpl.use("pgf")
-mpl.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    "font.family": "serif",     # Matches LaTeX default
-    "text.usetex": True,        # Let LaTeX handle the rendering
-    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
-})
-
 def get_size(width_pt, fraction=1, subplots=(1, 1)):
     """Set figure dimensions to avoid scaling in LaTeX."""
     fig_width_pt = width_pt * fraction
@@ -99,9 +90,13 @@ def main():
         y = np.arange(1, len(x) + 1) / len(x)
         ax.plot(x, y, color=color, linewidth=linewidth, label=label)
 
-    plot_cdf(ax1, errs['ble_e'], 'dodgerblue', 'BLE', 1.5)
-    plot_cdf(ax1, errs['mmw_e'], 'limegreen', 'mmWave', 1.5)
-    plot_cdf(ax1, errs['fus_e'], 'red', 'Fused T2TF', 2.0)
+    var_ble_e = np.var(errs['ble_e']) if len(errs['ble_e']) > 0 else 0
+    var_mmw_e = np.var(errs['mmw_e']) if len(errs['mmw_e']) > 0 else 0
+    var_fus_e = np.var(errs['fus_e']) if len(errs['fus_e']) > 0 else 0
+
+    plot_cdf(ax1, errs['ble_e'], 'dodgerblue', rf'BLE ($\sigma^2={var_ble_e:.2f}$)', 1.5)
+    plot_cdf(ax1, errs['mmw_e'], 'limegreen', rf'mmWave ($\sigma^2={var_mmw_e:.2f}$)', 1.5)
+    plot_cdf(ax1, errs['fus_e'], 'red', rf'Fused T2TF ($\sigma^2={var_fus_e:.2f}$)', 2.0)
     
     ax1.set_xlabel(r"Euclidean Distance to Ground Truth [m]")
     ax1.set_ylabel(r"Cumulative Probability")
@@ -114,10 +109,6 @@ def main():
     fig1.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3, fontsize=8)
 
     out1 = "ErrorCDF"
-    fig1.tight_layout()
-    fig1.savefig(f"{out1}.pgf", backend='pgf', bbox_inches='tight')
-    fig1.savefig(f"{out1}.pdf", bbox_inches='tight')
-    print(f"Saved {out1}")
 
     # ----------------------------------------------------
     # FIG 2: X and Y Error Subplots (Gaussian)
@@ -131,12 +122,17 @@ def main():
     mu_mmw_x, std_mmw_x = np.mean(errs['mmw_x']), np.std(errs['mmw_x'])
     mu_fus_x, std_fus_x = np.mean(errs['fus_x']), np.std(errs['fus_x'])
     
-    axX.plot(x_range2, stats.norm.pdf(x_range2, mu_ble_x, std_ble_x), color='dodgerblue', linewidth=1.5)
-    axX.plot(x_range2, stats.norm.pdf(x_range2, mu_mmw_x, std_mmw_x), color='limegreen', linewidth=1.5)
-    axX.plot(x_range2, stats.norm.pdf(x_range2, mu_fus_x, std_fus_x), color='red', linewidth=2.0)
-    axX.fill_between(x_range2, stats.norm.pdf(x_range2, mu_fus_x, std_fus_x), color='red', alpha=0.15)
-    axX.set_xlabel(r"Error in X-axis [m]")
-    axX.set_ylabel(r"Probability Density")
+    pdf_ble_x = stats.norm.pdf(x_range2, mu_ble_x, std_ble_x)
+    pdf_mmw_x = stats.norm.pdf(x_range2, mu_mmw_x, std_mmw_x)
+    pdf_fus_x = stats.norm.pdf(x_range2, mu_fus_x, std_fus_x)
+    max_pdf_x = max(np.max(pdf_ble_x), np.max(pdf_mmw_x), np.max(pdf_fus_x))
+    
+    axX.plot(x_range2, pdf_ble_x / max_pdf_x, color='dodgerblue', linewidth=1.5)
+    axX.plot(x_range2, pdf_mmw_x / max_pdf_x, color='limegreen', linewidth=1.5)
+    axX.plot(x_range2, pdf_fus_x / max_pdf_x, color='red', linewidth=2.0)
+    axX.fill_between(x_range2, pdf_fus_x / max_pdf_x, color='red', alpha=0.15)
+    axX.set_xlabel(r"Erro no eixo X[m]")
+    axX.set_ylabel(r"Densidade Relativa", fontsize=7)
     axX.grid(True, linestyle='--', alpha=0.5)
     axX.set_xlim([-1.8, 1.8])
     
@@ -145,11 +141,20 @@ def main():
     mu_mmw_y, std_mmw_y = np.mean(errs['mmw_y']), np.std(errs['mmw_y'])
     mu_fus_y, std_fus_y = np.mean(errs['fus_y']), np.std(errs['fus_y'])
     
-    axY.plot(x_range2, stats.norm.pdf(x_range2, mu_ble_y, std_ble_y), color='dodgerblue', linewidth=1.5, label=rf'BLE ($\sigma_x={std_ble_x:.2f}$, $\sigma_y={std_ble_y:.2f}$)')
-    axY.plot(x_range2, stats.norm.pdf(x_range2, mu_mmw_y, std_mmw_y), color='limegreen', linewidth=1.5, label=rf'mmWave ($\sigma_x={std_mmw_x:.2f}$, $\sigma_y={std_mmw_y:.2f}$)')
-    axY.plot(x_range2, stats.norm.pdf(x_range2, mu_fus_y, std_fus_y), color='red', linewidth=2.0, label=rf'Fused ($\sigma_x={std_fus_x:.2f}$, $\sigma_y={std_fus_y:.2f}$)')
-    axY.fill_between(x_range2, stats.norm.pdf(x_range2, mu_fus_y, std_fus_y), color='red', alpha=0.15)
-    axY.set_xlabel(r"Error in Y-axis [m]")
+    pdf_ble_y = stats.norm.pdf(x_range2, mu_ble_y, std_ble_y)
+    pdf_mmw_y = stats.norm.pdf(x_range2, mu_mmw_y, std_mmw_y)
+    pdf_fus_y = stats.norm.pdf(x_range2, mu_fus_y, std_fus_y)
+    max_pdf_y = max(np.max(pdf_ble_y), np.max(pdf_mmw_y), np.max(pdf_fus_y))
+    
+    var_ble_x, var_ble_y = std_ble_x**2, std_ble_y**2
+    var_mmw_x, var_mmw_y = std_mmw_x**2, std_mmw_y**2
+    var_fus_x, var_fus_y = std_fus_x**2, std_fus_y**2
+
+    axY.plot(x_range2, pdf_ble_y / max_pdf_y, color='dodgerblue', linewidth=1.5, label=rf'BLE ($\sigma_x^2={var_ble_x:.2f}$, $\sigma_y^2={var_ble_y:.2f}$)')
+    axY.plot(x_range2, pdf_mmw_y / max_pdf_y, color='limegreen', linewidth=1.5, label=rf'mmWave ($\sigma_x^2={var_mmw_x:.2f}$, $\sigma_y^2={var_mmw_y:.2f}$)')
+    axY.plot(x_range2, pdf_fus_y / max_pdf_y, color='red', linewidth=2.0, label=rf'Fused ($\sigma_x^2={var_fus_x:.2f}$, $\sigma_y^2={var_fus_y:.2f}$)')
+    axY.fill_between(x_range2, pdf_fus_y / max_pdf_y, color='red', alpha=0.15)
+    axY.set_xlabel(r"Erro no eixo Y[m]")
     
     ymax = max(axX.get_ylim()[1], axY.get_ylim()[1]) * 1.05
     axX.set_ylim(0, ymax)
@@ -164,9 +169,25 @@ def main():
 
     out2 = "ErrorGaussianXY"
     fig2.tight_layout()
+    fig1.tight_layout()
+    
+    fig2.savefig(f"{out2}.png", transparent = True, dpi=300, bbox_inches='tight')
+    fig1.savefig(f"{out1}.png", transparent = True, dpi=300, bbox_inches='tight')
+
+    mpl.use("pgf")
+    mpl.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        "font.family": "serif",     # Matches LaTeX default
+        "text.usetex": True,        # Let LaTeX handle the rendering
+        "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+    })
     fig2.savefig(f"{out2}.pgf", backend='pgf', bbox_inches='tight')
     fig2.savefig(f"{out2}.pdf", bbox_inches='tight')
     print(f"Saved {out2}")
+
+    fig1.savefig(f"{out1}.pgf", backend='pgf', bbox_inches='tight')
+    fig1.savefig(f"{out1}.pdf", bbox_inches='tight')
+    print(f"Saved {out1}")
 
 if __name__ == "__main__":
     main()

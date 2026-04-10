@@ -6,16 +6,6 @@ from matplotlib.patches import Polygon
 import matplotlib.patches as mpatches
 from scipy.spatial import ConvexHull
 
-# --- STEP 1: PGF CONFIGURATION ---
-# This must happen BEFORE plt.subplots()
-mpl.use("pgf")
-mpl.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    "font.family": "serif",     # Matches LaTeX default
-    "text.usetex": True,        # Let LaTeX handle the rendering
-    "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
-})
-
 from plot_room_2d import plot_obstacles, plot_radar_fov, plot_experiment_points
 from constants import EXPERIMENT_POINTS
 
@@ -97,7 +87,7 @@ def main():
     plot_obstacles(ax)
     plot_experiment_points(ax, True)
     
-    points_to_plot = {"C2P2": "Close Range", "C3P5": "Far Range"}
+    points_to_plot = {"C2P3": "Close Range", "C3P5": "Far Range"}
     handles = []
     
     for pt, annotation in points_to_plot.items():
@@ -116,7 +106,7 @@ def main():
         
         ax.scatter([p_ideal[0]], [p_ideal[1]], color='black', marker='x', s=20, zorder=5)
         # Using LaTeX math mode in the label
-        ax.text(p_ideal[0], p_ideal[1]+0.6, rf"\textsf{{{annotation}}}", 
+        ax.text(p_ideal[0], p_ideal[1]+0.6, rf"{annotation}", 
                 ha='center', va='bottom', fontsize=8, 
                 bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round'), zorder=6)
 
@@ -134,6 +124,16 @@ def main():
     output = "FootprintAreas"
     fig.tight_layout()
     # Save the PGF for LaTeX and a PDF for quick viewing (PGFs are hard to preview)
+    fig.savefig(f"{output}.png") 
+    # --- STEP 1: PGF CONFIGURATION ---
+    # This must happen BEFORE plt.subplots()
+    mpl.use("pgf")
+    mpl.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        "font.family": "serif",     # Matches LaTeX default
+        "text.usetex": True,        # Let LaTeX handle the rendering
+        "pgf.rcfonts": False,       # Ignore Matplotlib's internal fonts
+    })
     fig.savefig(f"{output}.pgf", backend='pgf')
     fig.savefig(f"{output}.pdf") 
     print(f"Saved {output}.pgf and {output}.pdf")

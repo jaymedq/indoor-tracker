@@ -1,0 +1,51 @@
+@startuml
+!theme plain
+skinparam componentStyle rectangle
+skinparam roundcorner 5
+skinparam shadowing false
+skinparam backgroundColor transparent
+
+' =========================================================
+' === COLUMN 1: Centralized Architecture (KF) ===
+' =========================================================
+frame "1. Centralized (Kalman Filter)" as Frame1 #f0f0f0 {
+    [Sensor 1 ] as S1
+    [Sensor 2 ] as S2
+    [Central Processor] as CP
+    
+    ' Internal Layout
+    S1 -[#blue,bold]-> CP : **s1** (Raw)
+    S2 -[#blue,bold]-> CP : **s2** (Raw)
+
+    note bottom of CP
+      **Fuses RAW Data**
+      Uses Global Model
+      Maintains Single State
+    end note
+}
+
+' This line forces the side-by-side layout
+
+
+' =========================================================
+' === COLUMN 2: Decentralized Architecture (T2TF) ===
+' =========================================================
+frame "2. Decentralized (T2TF)" as Frame2 #f0f0f0 {
+    [Sensor 1 ] as S3
+    [Sensor 2 ] as S4
+    [Processador Local] as N1
+    [Processador Local] as N2
+    [T2TF Processor] as T2T
+    
+    ' Internal Layout
+    S3-[#red,bold]-> N1: **s1** (Raw)
+    S4-[#red,bold]-> N2 : **s2** (Raw)
+    N1 -[#red,bold]-> T2T : **[x1, y1]** (Track)
+    N2 -[#red,bold]-> T2T : **[x2, y2]** (Track)
+    note bottom of T2T
+        **Fuses TRACKS (x, P)**
+        e.g., Inverse Covariance Weighting
+    end note
+}
+
+@enduml

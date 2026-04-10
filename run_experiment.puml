@@ -1,0 +1,21 @@
+@startuml
+skinparam style strictuml
+skinparam defaultTextAlignment center
+skinparam backgroundColor transparent
+
+
+start
+
+:Inicializar parâmetros do experimento;
+:Iniciar o app de aquisição do radar mmWave;
+:Estabelecer conexão com o banco de dados (BLE);
+:Registrar o timestamp de Início do teste;
+:Aguardar a duração programada do experimento;
+:Registrar o timestamp de Fim do teste;
+:Parar a aquisição do radar mmWave;
+:Consultar dados de posicionamento BLE
+referentes à janela temporal gravada;
+:Salvar os fluxos (streams) coletados dos sensores;
+
+stop
+@enduml
